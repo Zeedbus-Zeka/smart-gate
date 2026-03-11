@@ -11,7 +11,7 @@ const MAX_DISTANCE_METERS = 100;
 // 👨‍👩‍👧‍👦 ฐานข้อมูลสมาชิก
 // ==========================================
 const FAMILY_MEMBERS = {
-  '1111': { name: 'คุณพ่อ (Admin)', role: 'dad' },
+  '1111': { name: 'ปะป๋าเอส (Admin)', role: 'dad' },
   '2222': { name: 'ลูกคนที่ 1', role: 'kid' },
   '3333': { name: 'ลูกคนที่ 2', role: 'kid' },
 };
@@ -59,16 +59,38 @@ const getCurrentDayExerciseIds = (day) => {
 const toDateKey = (d) => (d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '');
 const todayKey = () => toDateKey(new Date());
 
+const THAI_MONTH_ABBR = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const formatDateThai = (dateKey) => {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return `${d} ${THAI_MONTH_ABBR[m - 1]}`;
+};
+
 const getExerciseSearchKey = (ex) => ex.searchKey || ex.nameGym.replace(/\s*\([^)]*\)\s*$/, '').trim() || 'exercise';
 const openYouTubeSearch = (query) => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' how to form')}`, '_blank', 'noopener,noreferrer');
 const openGoogleImageSearch = (query) => window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query + ' exercise')}`, '_blank', 'noopener,noreferrer');
 
+// สมาชิกในบ้าน (ปะป๋าเอส + ลูก 4 คน: พู พี พลอส พัตเตอร์)
+const HOUSEHOLD_MEMBERS = [
+  { id: 'dad', name: 'ปะป๋าเอส' },
+  { id: 'poo', name: 'พู' },
+  { id: 'pee', name: 'พี' },
+  { id: 'plus', name: 'พลอส' },
+  { id: 'potter', name: 'พัตเตอร์' },
+];
+
 const HOUSE_ACTIVITIES = [
-  { id: 1, title: 'กวาดบ้าน', done: false },
-  { id: 2, title: 'ล้างจาน', done: true },
-  { id: 3, title: 'รดน้ำต้นไม้', done: false },
-  { id: 4, title: 'ซักผ้า', done: false },
-  { id: 5, title: 'จัดห้องนอน', done: false },
+  { id: 1, title: 'กวาดบ้าน', done: false, assigneeId: 'poo' },
+  { id: 2, title: 'ล้างจาน', done: true, assigneeId: 'pee' },
+  { id: 3, title: 'รดน้ำต้นไม้', done: false, assigneeId: 'plus' },
+  { id: 4, title: 'ซักผ้า', done: false, assigneeId: 'potter' },
+  { id: 5, title: 'จัดห้องนอน', done: false, assigneeId: 'poo' },
+  { id: 6, title: 'ถูบ้าน', done: false, assigneeId: 'poo' },
+  { id: 7, title: 'เก็บของเข้าที่', done: false, assigneeId: 'pee' },
+  { id: 8, title: 'ล้างห้องน้ำ', done: false, assigneeId: 'plus' },
+  { id: 9, title: 'ตากผ้า / พับผ้า', done: false, assigneeId: 'potter' },
+  { id: 10, title: 'จัดโต๊ะอาหาร', done: false, assigneeId: 'pee' },
+  { id: 11, title: 'ดูและสัตว์เลี้ยง', done: false, assigneeId: 'poo' },
+  { id: 12, title: 'แยกขยะ / นำขยะออก', done: false, assigneeId: 'pee' },
 ];
 
 export default function App() {
@@ -146,6 +168,32 @@ export default function App() {
     const dates = Object.keys(weightHistory).filter((d) => d < trainingSessionDate && weightHistory[d][exerciseId] != null).sort();
     if (dates.length === 0) return null;
     return weightHistory[dates[dates.length - 1]][exerciseId];
+  };
+  /** ประวัติน้ำหนักท่านี้ (ทุกวันที่บันทึก) เรียงจากใหม่ไปเก่า สูงสุด 6 ครั้ง */
+  const getWeightHistoryForExercise = (exerciseId) => {
+    const entries = Object.entries(weightHistory)
+      .filter(([, session]) => session[exerciseId] != null)
+      .map(([date, session]) => ({ date, weight: session[exerciseId] }))
+      .sort((a, b) => (a.date > b.date ? -1 : 1))
+      .slice(0, 6);
+    return entries;
+  };
+  /** คำแนะนำสำหรับครั้งนี้: น้ำหนักล่าสุด แนวโน้ม และข้อความแนะนำ */
+  const getWeightSuggestion = (exerciseId) => {
+    const history = getWeightHistoryForExercise(exerciseId);
+    const beforeToday = history.filter((h) => h.date < trainingSessionDate);
+    const last = beforeToday[0];
+    const prev = beforeToday[1];
+    if (!last) return { lastWeight: null, trend: null, suggestText: null };
+    const lastWeight = last.weight;
+    if (!prev) return { lastWeight, trend: null, suggestText: `ใช้ ${lastWeight} kg เท่าเดิม หรือลองเพิ่ม 2.5 kg` };
+    const prevWeight = prev.weight;
+    const trend = lastWeight > prevWeight ? 'up' : lastWeight < prevWeight ? 'down' : 'same';
+    const trendText = trend === 'up' ? 'แนวโน้มเพิ่ม' : trend === 'down' ? 'ลดลง' : 'เท่าเดิม';
+    const suggestText = trend === 'same'
+      ? `ใช้ ${lastWeight} kg เท่าเดิม หรือลองเพิ่ม 2.5 kg`
+      : `ใช้ ${lastWeight} kg (${trendText})`;
+    return { lastWeight, prevWeight, trend, suggestText };
   };
   const setExerciseWeight = (exerciseId, value) => {
     const trimmed = value === null ? '' : String(value).trim();
@@ -570,9 +618,35 @@ export default function App() {
                       <p className="text-slate-400 text-xs mt-0.5">
                         {ex.sets} เซต {repDisplay !== '-' ? `· ${repDisplay}` : ''}
                       </p>
-                      {!isWarmup && lastWeight != null && (
-                        <p className="text-cyan-400/80 text-xs mt-1">ครั้งก่อน: {lastWeight} kg</p>
-                      )}
+                      {!isWarmup && (() => {
+                        const suggestion = getWeightSuggestion(ex.id);
+                        const history = getWeightHistoryForExercise(ex.id);
+                        return (
+                          <div className="mt-2 space-y-1.5">
+                            {suggestion.lastWeight != null && (
+                              <p className="text-cyan-400/90 text-xs font-medium">
+                                ครั้งก่อน: {suggestion.lastWeight} kg
+                                {suggestion.suggestText != null && (
+                                  <span className="block text-emerald-400/90 font-normal mt-0.5">แนะนำ: {suggestion.suggestText}</span>
+                                )}
+                              </p>
+                            )}
+                            {history.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                <span className="text-slate-500 text-[10px] uppercase tracking-wider self-center">สถิติ:</span>
+                                {history.map(({ date, weight }) => (
+                                  <span
+                                    key={date}
+                                    className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/10 text-slate-300 text-[11px] border border-white/10"
+                                  >
+                                    {formatDateThai(date)} {weight} kg
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </button>
                   <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center gap-1">
@@ -648,9 +722,35 @@ export default function App() {
                                 <span className="ml-2 text-amber-400/80 text-xs">· {ex.badge}</span>
                               )}
                             </p>
-                            {lastWeight != null && (
-                              <p className="text-cyan-400/80 text-xs mt-1">ครั้งก่อน: {lastWeight} kg</p>
-                            )}
+                            {(() => {
+                              const suggestion = getWeightSuggestion(ex.id);
+                              const history = getWeightHistoryForExercise(ex.id);
+                              return (
+                                <div className="mt-2 space-y-1.5">
+                                  {suggestion.lastWeight != null && (
+                                    <p className="text-cyan-400/90 text-xs font-medium">
+                                      ครั้งก่อน: {suggestion.lastWeight} kg
+                                      {suggestion.suggestText != null && (
+                                        <span className="block text-emerald-400/90 font-normal mt-0.5">แนะนำ: {suggestion.suggestText}</span>
+                                      )}
+                                    </p>
+                                  )}
+                                  {history.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5">
+                                      <span className="text-slate-500 text-[10px] uppercase tracking-wider self-center">สถิติ:</span>
+                                      {history.map(({ date, weight }) => (
+                                        <span
+                                          key={date}
+                                          className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/10 text-slate-300 text-[11px] border border-white/10"
+                                        >
+                                          {formatDateThai(date)} {weight} kg
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
                         </button>
                         <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center gap-1">
@@ -701,22 +801,48 @@ export default function App() {
                 <ClipboardList className="w-5 h-5 text-cyan-400" />
                 กิจกรรมของบ้าน
               </h2>
-              <p className="text-slate-400 text-sm mt-1">สิ่งที่ต้องทำในบ้านวันนี้</p>
+              <p className="text-slate-400 text-sm mt-1">สิ่งที่ต้องทำในบ้าน · แตะเพื่อทำเครื่องหมายว่าทำแล้ว</p>
             </div>
-            {activities.map((a) => (
-              <button
-                key={a.id}
-                onClick={() => toggleActivity(a.id)}
-                className="w-full flex items-center gap-4 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-cyan-400/30 transition-all text-left active:scale-[0.99]"
-              >
-                {a.done ? (
-                  <Check className="w-6 h-6 text-emerald-400 shrink-0 rounded-full bg-emerald-400/20 p-1" />
-                ) : (
-                  <Circle className="w-6 h-6 text-slate-500 shrink-0" />
-                )}
-                <p className={`flex-1 font-medium ${a.done ? 'text-slate-500 line-through' : 'text-slate-100'}`}>{a.title}</p>
-              </button>
-            ))}
+
+            {/* สมาชิกในบ้าน: ปะป๋าเอส + พู พี พลอส พัตเตอร์ */}
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">สมาชิกในบ้าน</h3>
+              <div className="flex flex-wrap gap-2">
+                {HOUSEHOLD_MEMBERS.map((m) => (
+                  <span
+                    key={m.id}
+                    className="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 text-sm"
+                  >
+                    {m.name}
+                  </span>
+                ))}
+              </div>
+              <p className="text-slate-500 text-xs mt-3">ปะป๋าเอส + พู · พี · พลอส · พัตเตอร์ (ใส่ตัวอย่างหน้าที่ไว้แล้ว)</p>
+            </div>
+
+            <h3 className="text-sm font-semibold text-slate-400 px-1">รายการหน้าที่ · ใครทำอะไร</h3>
+            {activities.map((a) => {
+              const assignee = a.assigneeId ? HOUSEHOLD_MEMBERS.find((m) => m.id === a.assigneeId) : null;
+              return (
+                <button
+                  key={a.id}
+                  onClick={() => toggleActivity(a.id)}
+                  className="w-full flex items-center gap-4 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-cyan-400/30 transition-all text-left active:scale-[0.99]"
+                >
+                  {a.done ? (
+                    <Check className="w-6 h-6 text-emerald-400 shrink-0 rounded-full bg-emerald-400/20 p-1" />
+                  ) : (
+                    <Circle className="w-6 h-6 text-slate-500 shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-medium ${a.done ? 'text-slate-500 line-through' : 'text-slate-100'}`}>{a.title}</p>
+                    {assignee && (
+                      <p className="text-cyan-400/90 text-xs mt-0.5">หน้าที่: {assignee.name}</p>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
