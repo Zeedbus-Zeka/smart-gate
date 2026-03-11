@@ -818,6 +818,7 @@ export default function App() {
                 ))}
               </div>
               <p className="text-slate-500 text-xs mt-3">ปะป๋าเอส + พู · พี · พลอส · พัตเตอร์ (ใส่ตัวอย่างหน้าที่ไว้แล้ว)</p>
+              <p className="text-slate-600 text-[10px] mt-1">ข้อมูลเดียวกันทุกอุปกรณ์ · ถ้ามือถือไม่ตรง ให้ล้างแคชหรือรีเฟรช</p>
             </div>
 
             <h3 className="text-sm font-semibold text-slate-400 px-1">รายการหน้าที่ · ใครทำอะไร</h3>
