@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight } from 'lucide-react';
+import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image } from 'lucide-react';
 
 // ==========================================
 // 📍 ตั้งค่าพิกัดบ้าน (Latitude, Longitude)
@@ -26,27 +26,27 @@ const TABS = [
 // 🏋️ ตารางฝึก 3 เดือน (จากแผน Hybrid) + โฟกัสหัวไหล่
 // ==========================================
 const TRAINING_PROGRAM_A = [
-  { id: 'a0', nameGym: 'Warm-up: ปั่นจักรยาน/เดินชัน 10 นาที', nameHome: 'ย่ำเท้าอยู่กับที่ / แกว่งแขน 5 นาที', sets: 1, reps: '-', unit: '' },
-  { id: 'a1', nameGym: 'Goblet Squat (8-10 kg)', nameHome: 'Bodyweight Squat ลุกนั่งมือเปล่า 15-20 ครั้ง', sets: 3, reps: '12', unit: 'ครั้ง' },
-  { id: 'a2', nameGym: 'Chest Press Machine (15-20 kg)', nameHome: 'Board Push-up 🔵 สีน้ำเงิน (อก)', sets: 3, reps: '10-15', unit: 'ครั้ง' },
-  { id: 'a3', nameGym: 'Lat Pulldown (20-25 kg)', nameHome: 'Board Push-up 🟡 สีเหลือง (หลัง) จังหวะยุบตัวบีบสะบัก', sets: 3, reps: '10-15', unit: 'ครั้ง' },
-  { id: 'a4', nameGym: 'Dumbbell Shoulder Press (4-6 kg/ข้าง)', nameHome: 'Board Push-up 🔴 สีแดง (ไหล่)', sets: 3, reps: '8-12', unit: 'ครั้ง' },
-  { id: 'a5', nameGym: 'Plank แกนกลาง', nameHome: 'Plank (ทำเหมือนเดิม)', sets: 3, reps: '45', unit: 'วินาที' },
+  { id: 'a0', nameGym: 'Warm-up: ปั่นจักรยาน/เดินชัน 10 นาที', nameHome: 'ย่ำเท้าอยู่กับที่ / แกว่งแขน 5 นาที', sets: 1, reps: '-', unit: '', searchKey: 'treadmill incline walk warm up' },
+  { id: 'a1', nameGym: 'Goblet Squat (8-10 kg)', nameHome: 'Bodyweight Squat ลุกนั่งมือเปล่า 15-20 ครั้ง', sets: 3, reps: '12', unit: 'ครั้ง', searchKey: 'Goblet Squat how to' },
+  { id: 'a2', nameGym: 'Chest Press Machine (15-20 kg)', nameHome: 'Board Push-up 🔵 สีน้ำเงิน (อก)', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'Chest Press Machine gym' },
+  { id: 'a3', nameGym: 'Lat Pulldown (20-25 kg)', nameHome: 'Board Push-up 🟡 สีเหลือง (หลัง) จังหวะยุบตัวบีบสะบัก', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'Lat Pulldown how to' },
+  { id: 'a4', nameGym: 'Dumbbell Shoulder Press (4-6 kg/ข้าง)', nameHome: 'Board Push-up 🔴 สีแดง (ไหล่)', sets: 3, reps: '8-12', unit: 'ครั้ง', searchKey: 'Dumbbell Shoulder Press' },
+  { id: 'a5', nameGym: 'Plank แกนกลาง', nameHome: 'Plank (ทำเหมือนเดิม)', sets: 3, reps: '45', unit: 'วินาที', searchKey: 'Plank exercise form' },
 ];
 
 const TRAINING_PROGRAM_B = [
-  { id: 'b0', nameGym: 'Warm-up: เดินชัน (Incline Walk) 10 นาที', nameHome: 'Jumping Jacks กระโดดตบเบาๆ 5 นาที', sets: 1, reps: '-', unit: '' },
-  { id: 'b1', nameGym: 'Leg Press Machine (30-40 kg)', nameHome: 'Lunges ก้าวเท้าย่อตัวสลับซ้าย-ขวา ข้างละ 10 ครั้ง', sets: 3, reps: '12', unit: 'ครั้ง' },
-  { id: 'b2', nameGym: 'Seated Cable Row (20-25 kg)', nameHome: 'Board Push-up 🟡 สีเหลือง (หลัง) เกร็งค้างตอนตัวลงต่ำสุด', sets: 3, reps: '10-15', unit: 'ครั้ง' },
-  { id: 'b3', nameGym: 'Dumbbell Incline Press (อกบน)', nameHome: 'Decline Board Push-up 🔵 เอาเท้าพาดบนเตียง/เก้าอี้ แล้ววิดพื้น', sets: 3, reps: '10-12', unit: 'ครั้ง' },
-  { id: 'b4', nameGym: 'Dumbbell Biceps Curl (5-7 kg/ข้าง)', nameHome: 'ยกกระเป๋าเป้ใส่หนังสือ/ขวดน้ำ (พับศอกยก)', sets: 2, reps: '12-15', unit: 'ครั้ง' },
-  { id: 'b5', nameGym: 'Triceps Rope Pushdown (10-15 kg)', nameHome: 'Board Push-up 🟢 สีเขียว (หลังแขน) ศอกหนีบลำตัว', sets: 2, reps: '10-15', unit: 'ครั้ง' },
+  { id: 'b0', nameGym: 'Warm-up: เดินชัน (Incline Walk) 10 นาที', nameHome: 'Jumping Jacks กระโดดตบเบาๆ 5 นาที', sets: 1, reps: '-', unit: '', searchKey: 'incline walk treadmill' },
+  { id: 'b1', nameGym: 'Leg Press Machine (30-40 kg)', nameHome: 'Lunges ก้าวเท้าย่อตัวสลับซ้าย-ขวา ข้างละ 10 ครั้ง', sets: 3, reps: '12', unit: 'ครั้ง', searchKey: 'Leg Press Machine gym' },
+  { id: 'b2', nameGym: 'Seated Cable Row (20-25 kg)', nameHome: 'Board Push-up 🟡 สีเหลือง (หลัง) เกร็งค้างตอนตัวลงต่ำสุด', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'Seated Cable Row' },
+  { id: 'b3', nameGym: 'Dumbbell Incline Press (อกบน)', nameHome: 'Decline Board Push-up 🔵 เอาเท้าพาดบนเตียง/เก้าอี้ แล้ววิดพื้น', sets: 3, reps: '10-12', unit: 'ครั้ง', searchKey: 'Dumbbell Incline Press' },
+  { id: 'b4', nameGym: 'Dumbbell Biceps Curl (5-7 kg/ข้าง)', nameHome: 'ยกกระเป๋าเป้ใส่หนังสือ/ขวดน้ำ (พับศอกยก)', sets: 2, reps: '12-15', unit: 'ครั้ง', searchKey: 'Dumbbell Biceps Curl' },
+  { id: 'b5', nameGym: 'Triceps Rope Pushdown (10-15 kg)', nameHome: 'Board Push-up 🟢 สีเขียว (หลังแขน) ศอกหนีบลำตัว', sets: 2, reps: '10-15', unit: 'ครั้ง', searchKey: 'Triceps Rope Pushdown' },
 ];
 
 // พิเศษ: โฟกัสหัวไหล่ให้กว้าง (เพิ่มทุกวันที่ฝึก)
 const SHOULDER_EXTRA = [
-  { id: 's1', nameGym: 'Lateral Raise (4-6 kg/ข้าง)', nameHome: 'ยกขวดน้ำด้านข้าง แขนตรง', sets: 3, reps: '12-15', unit: 'ครั้ง', badge: 'หัวไหล่กว้าง' },
-  { id: 's2', nameGym: 'Cable/Band Lateral Raise หรือ Reverse Fly', nameHome: 'ยางยืดยกด้านข้าง / ดึงยางด้านหลัง', sets: 2, reps: '15', unit: 'ครั้ง', badge: 'หัวไหล่กว้าง' },
+  { id: 's1', nameGym: 'Lateral Raise (4-6 kg/ข้าง)', nameHome: 'ยกขวดน้ำด้านข้าง แขนตรง', sets: 3, reps: '12-15', unit: 'ครั้ง', badge: 'หัวไหล่กว้าง', searchKey: 'Lateral Raise dumbbell' },
+  { id: 's2', nameGym: 'Cable/Band Lateral Raise หรือ Reverse Fly', nameHome: 'ยางยืดยกด้านข้าง / ดึงยางด้านหลัง', sets: 2, reps: '15', unit: 'ครั้ง', badge: 'หัวไหล่กว้าง', searchKey: 'Cable Lateral Raise Reverse Fly' },
 ];
 
 const TRAINING_STORAGE_KEY = 'smartgate_training';
@@ -58,6 +58,10 @@ const getCurrentDayExerciseIds = (day) => {
 
 const toDateKey = (d) => (d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '');
 const todayKey = () => toDateKey(new Date());
+
+const getExerciseSearchKey = (ex) => ex.searchKey || ex.nameGym.replace(/\s*\([^)]*\)\s*$/, '').trim() || 'exercise';
+const openYouTubeSearch = (query) => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' how to form')}`, '_blank', 'noopener,noreferrer');
+const openGoogleImageSearch = (query) => window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query + ' exercise')}`, '_blank', 'noopener,noreferrer');
 
 const HOUSE_ACTIVITIES = [
   { id: 1, title: 'กวาดบ้าน', done: false },
@@ -545,10 +549,11 @@ export default function App() {
               const isWarmup = ex.id === 'a0' || ex.id === 'b0';
               const currentWeight = currentSessionWeights[ex.id];
               const lastWeight = getLastWeightForExercise(ex.id);
+              const searchKey = getExerciseSearchKey(ex);
               return (
                 <div
                   key={ex.id}
-                  className="w-full flex items-center gap-3 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-cyan-400/20 transition-all"
+                  className="w-full flex items-center gap-2 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-cyan-400/20 transition-all"
                 >
                   <button
                     type="button"
@@ -570,22 +575,38 @@ export default function App() {
                       )}
                     </div>
                   </button>
+                  <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => openYouTubeSearch(searchKey)}
+                      className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                      title="ดูตัวอย่างใน YouTube"
+                    >
+                      <Youtube className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openGoogleImageSearch(searchKey)}
+                      className="p-2 rounded-lg bg-slate-500/20 text-slate-300 hover:bg-slate-500/30 transition-colors"
+                      title="ดูภาพใน Google"
+                    >
+                      <Image className="w-5 h-5" />
+                    </button>
+                  </div>
                   {!isWarmup && (
-                    <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex flex-col items-end gap-0.5">
-                      <div className="flex items-center gap-1">
-                        <Weight className="w-4 h-4 text-slate-500" />
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          min="0"
-                          step="0.5"
-                          placeholder="kg"
-                          value={currentWeight != null ? String(currentWeight) : ''}
-                          onChange={(e) => setExerciseWeight(ex.id, e.target.value)}
-                          className="w-14 text-right bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-slate-100 text-sm focus:border-cyan-400/50 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                        <span className="text-slate-500 text-xs">kg</span>
-                      </div>
+                    <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center gap-1">
+                      <Weight className="w-4 h-4 text-slate-500" />
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.5"
+                        placeholder="kg"
+                        value={currentWeight != null ? String(currentWeight) : ''}
+                        onChange={(e) => setExerciseWeight(ex.id, e.target.value)}
+                        className="w-14 text-right bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-slate-100 text-sm focus:border-cyan-400/50 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <span className="text-slate-500 text-xs">kg</span>
                     </div>
                   )}
                 </div>
@@ -603,10 +624,11 @@ export default function App() {
                     const done = trainingCompletedIds[ex.id];
                     const currentWeight = currentSessionWeights[ex.id];
                     const lastWeight = getLastWeightForExercise(ex.id);
+                    const searchKey = getExerciseSearchKey(ex);
                     return (
                       <div
                         key={ex.id}
-                        className="w-full flex items-center gap-3 p-4 bg-amber-500/5 backdrop-blur-xl rounded-2xl border border-amber-400/20 hover:border-amber-400/30 transition-all mb-2"
+                        className="w-full flex items-center gap-2 p-4 bg-amber-500/5 backdrop-blur-xl rounded-2xl border border-amber-400/20 hover:border-amber-400/30 transition-all mb-2"
                       >
                         <button
                           type="button"
@@ -631,6 +653,24 @@ export default function App() {
                             )}
                           </div>
                         </button>
+                        <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openYouTubeSearch(searchKey)}
+                            className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                            title="ดูตัวอย่างใน YouTube"
+                          >
+                            <Youtube className="w-5 h-5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openGoogleImageSearch(searchKey)}
+                            className="p-2 rounded-lg bg-slate-500/20 text-slate-300 hover:bg-slate-500/30 transition-colors"
+                            title="ดูภาพใน Google"
+                          >
+                            <Image className="w-5 h-5" />
+                          </button>
+                        </div>
                         <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center gap-1">
                           <Weight className="w-4 h-4 text-slate-500" />
                           <input
