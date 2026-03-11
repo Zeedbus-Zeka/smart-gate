@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image } from 'lucide-react';
+import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image, Navigation } from 'lucide-react';
 
 // ==========================================
 // 📍 ตั้งค่าพิกัดบ้าน (Latitude, Longitude)
 // ==========================================
 const HOME_COORDS = { lat: 13.8473095, lng: 100.4979925 };
+const openGoogleMapsToHome = () => {
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${HOME_COORDS.lat},${HOME_COORDS.lng}&travelmode=driving`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
 const MAX_DISTANCE_METERS = 100; 
 
 // ==========================================
@@ -396,9 +400,19 @@ export default function App() {
           <div className="space-y-4">
             {/* GPS Card */}
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 shadow-xl border border-white/10">
-              <div className="flex items-center gap-2 mb-3">
-                <MapPin className="text-slate-400 w-5 h-5" />
-                <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">ตำแหน่ง</h2>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <MapPin className="text-slate-400 w-5 h-5" />
+                  <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">ตำแหน่ง</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={openGoogleMapsToHome}
+                  className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors"
+                  title="นำทางกลับบ้านด้วย Google Maps"
+                >
+                  <Navigation className="w-5 h-5" />
+                </button>
               </div>
               {locationError ? (
                 <p className="text-red-400 text-sm flex items-center gap-2 bg-red-400/10 p-3 rounded-xl border border-red-400/20">
