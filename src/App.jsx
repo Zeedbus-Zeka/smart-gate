@@ -4,7 +4,7 @@ import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Du
 // ==========================================
 // 📍 ตั้งค่าพิกัดบ้าน (Latitude, Longitude)
 // ==========================================
-const HOME_COORDS = { lat: 13.7563, lng: 100.5018 };
+const HOME_COORDS = { lat: 13.8473095, lng: 100.4979925 };
 const MAX_DISTANCE_METERS = 100; 
 
 // ==========================================
@@ -257,7 +257,7 @@ export default function App() {
 
   const getLocation = () => {
     if (isSimulatingNearHome) {
-      setCurrentLocation({ lat: 13.7564, lng: 100.5018 });
+      setCurrentLocation({ lat: 13.8474, lng: 100.498 });
       setDistance(10);
       setLocationError('');
       return;
