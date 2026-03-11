@@ -113,10 +113,16 @@ export default function App() {
   const [trainingDay, setTrainingDay] = useState(1);
   const [trainingPlace, setTrainingPlace] = useState('gym');
   const [trainingCompletedIds, setTrainingCompletedIds] = useState({});
-  const [trainingSessionDate, setTrainingSessionDate] = useState(() => todayKey());
+  const [sessionDateByDay, setSessionDateByDay] = useState(() => ({
+    1: todayKey(),
+    2: todayKey(),
+    3: todayKey(),
+  }));
   const [weightHistory, setWeightHistory] = useState({});
   const [trainingWeek, setTrainingWeek] = useState(1);
   const [trainingNotes, setTrainingNotes] = useState('');
+
+  const currentSessionDate = trainingDay >= 1 && trainingDay <= 3 ? (sessionDateByDay[trainingDay] || todayKey()) : null;
 
   useEffect(() => {
     const key = user ? getTrainingStorageKey(user.id) : null;
@@ -128,7 +134,16 @@ export default function App() {
         if (data.day >= 1 && data.day <= 4) setTrainingDay(data.day);
         if (data.place === 'gym' || data.place === 'home') setTrainingPlace(data.place);
         if (data.completedIds && typeof data.completedIds === 'object') setTrainingCompletedIds(data.completedIds);
-        if (data.sessionDate && /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDate)) setTrainingSessionDate(data.sessionDate);
+        if (data.sessionDateByDay && typeof data.sessionDateByDay === 'object') {
+          const today = todayKey();
+          setSessionDateByDay({
+            1: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay[1]) ? data.sessionDateByDay[1] : today,
+            2: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay[2]) ? data.sessionDateByDay[2] : today,
+            3: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay[3]) ? data.sessionDateByDay[3] : today,
+          });
+        } else if (data.sessionDate && /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDate)) {
+          setSessionDateByDay({ 1: data.sessionDate, 2: data.sessionDate, 3: data.sessionDate });
+        }
         if (data.weightHistory && typeof data.weightHistory === 'object') setWeightHistory(data.weightHistory);
         if (typeof data.week === 'number' && data.week >= 1 && data.week <= 12) setTrainingWeek(data.week);
         if (typeof data.notes === 'string') setTrainingNotes(data.notes);
@@ -143,9 +158,10 @@ export default function App() {
   const trainingTotalCount = currentDayIds.length;
   const trainingAllDone = trainingTotalCount > 0 && trainingDoneCount === trainingTotalCount;
 
-  const currentSessionWeights = weightHistory[trainingSessionDate] || {};
+  const currentSessionWeights = currentSessionDate ? weightHistory[currentSessionDate] || {} : {};
   const getLastWeightForExercise = (exerciseId) => {
-    const dates = Object.keys(weightHistory).filter((d) => d < trainingSessionDate && weightHistory[d][exerciseId] != null).sort();
+    if (!currentSessionDate) return null;
+    const dates = Object.keys(weightHistory).filter((d) => d < currentSessionDate && weightHistory[d][exerciseId] != null).sort();
     if (dates.length === 0) return null;
     return weightHistory[dates[dates.length - 1]][exerciseId];
   };
@@ -161,7 +177,7 @@ export default function App() {
   /** คำแนะนำสำหรับครั้งนี้: น้ำหนักล่าสุด แนวโน้ม และข้อความแนะนำ */
   const getWeightSuggestion = (exerciseId) => {
     const history = getWeightHistoryForExercise(exerciseId);
-    const beforeToday = history.filter((h) => h.date < trainingSessionDate);
+    const beforeToday = currentSessionDate ? history.filter((h) => h.date < currentSessionDate) : [];
     const last = beforeToday[0];
     const prev = beforeToday[1];
     if (!last) return { lastWeight: null, trend: null, suggestText: null };
@@ -176,12 +192,13 @@ export default function App() {
     return { lastWeight, prevWeight, trend, suggestText };
   };
   const setExerciseWeight = (exerciseId, value) => {
+    if (!currentSessionDate) return;
     const trimmed = value === null ? '' : String(value).trim();
     if (trimmed === '') {
       setWeightHistory((prev) => {
-        const session = { ...(prev[trainingSessionDate] || {}) };
+        const session = { ...(prev[currentSessionDate] || {}) };
         delete session[exerciseId];
-        return { ...prev, [trainingSessionDate]: session };
+        return { ...prev, [currentSessionDate]: session };
       });
       return;
     }
@@ -189,7 +206,7 @@ export default function App() {
     if (Number.isNaN(num) || num < 0) return;
     setWeightHistory((prev) => ({
       ...prev,
-      [trainingSessionDate]: { ...(prev[trainingSessionDate] || {}), [exerciseId]: num },
+      [currentSessionDate]: { ...(prev[currentSessionDate] || {}), [exerciseId]: num },
     }));
   };
 
@@ -203,14 +220,14 @@ export default function App() {
           day: trainingDay,
           place: trainingPlace,
           completedIds: trainingCompletedIds,
-          sessionDate: trainingSessionDate,
+          sessionDateByDay,
           weightHistory,
           week: trainingWeek,
           notes: trainingNotes,
         })
       );
     } catch (_) {}
-  }, [user, trainingDay, trainingPlace, trainingCompletedIds, trainingSessionDate, weightHistory, trainingWeek, trainingNotes]);
+  }, [user, trainingDay, trainingPlace, trainingCompletedIds, sessionDateByDay, weightHistory, trainingWeek, trainingNotes]);
 
   const toggleTrainingDone = (id) => {
     setTrainingCompletedIds((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -562,14 +579,14 @@ export default function App() {
             {/* Gym / Home + Progress (เมื่อไม่ใช่วันพัก) */}
             {trainingDay !== 4 && (
               <>
-                {/* วันที่ฟิตเนต */}
+                {/* วันที่ฟิตเนต (บันทึกแยกตามวัน 1 / 2 / 3) */}
                 <div className="flex items-center gap-2 p-3 bg-white/5 rounded-xl border border-white/10">
                   <Calendar className="w-5 h-5 text-cyan-400 shrink-0" />
-                  <label className="text-slate-300 text-sm font-medium shrink-0">วันที่ฝึก:</label>
+                  <label className="text-slate-300 text-sm font-medium shrink-0">วันที่ฝึก (วันที่ {trainingDay}):</label>
                   <input
                     type="date"
-                    value={trainingSessionDate}
-                    onChange={(e) => setTrainingSessionDate(e.target.value)}
+                    value={currentSessionDate ?? ''}
+                    onChange={(e) => setSessionDateByDay((prev) => ({ ...prev, [trainingDay]: e.target.value }))}
                     className="flex-1 min-w-0 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/30 focus:outline-none"
                   />
                 </div>
