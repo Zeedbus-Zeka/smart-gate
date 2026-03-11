@@ -53,7 +53,8 @@ const SHOULDER_EXTRA = [
   { id: 's2', nameGym: 'Cable/Band Lateral Raise หรือ Reverse Fly', nameHome: 'ยางยืดยกด้านข้าง / ดึงยางด้านหลัง', sets: 2, reps: '15', unit: 'ครั้ง', badge: 'หัวไหล่กว้าง', searchKey: 'Cable Lateral Raise Reverse Fly' },
 ];
 
-const TRAINING_STORAGE_KEY = 'smartgate_training';
+const TRAINING_STORAGE_KEY_PREFIX = 'smartgate_training';
+const getTrainingStorageKey = (userId) => (userId ? `${TRAINING_STORAGE_KEY_PREFIX}_${userId}` : null);
 const getCurrentDayExerciseIds = (day) => {
   if (day === 4) return [];
   const program = day === 2 ? TRAINING_PROGRAM_B : TRAINING_PROGRAM_A;
@@ -109,56 +110,31 @@ export default function App() {
   const [isSimulatingNearHome, setIsSimulatingNearHome] = useState(false);
 
   const [activities, setActivities] = useState(HOUSE_ACTIVITIES);
-  const [trainingDay, setTrainingDay] = useState(() => {
+  const [trainingDay, setTrainingDay] = useState(1);
+  const [trainingPlace, setTrainingPlace] = useState('gym');
+  const [trainingCompletedIds, setTrainingCompletedIds] = useState({});
+  const [trainingSessionDate, setTrainingSessionDate] = useState(() => todayKey());
+  const [weightHistory, setWeightHistory] = useState({});
+  const [trainingWeek, setTrainingWeek] = useState(1);
+  const [trainingNotes, setTrainingNotes] = useState('');
+
+  useEffect(() => {
+    const key = user ? getTrainingStorageKey(user.id) : null;
+    if (!key) return;
     try {
-      const s = localStorage.getItem(TRAINING_STORAGE_KEY);
+      const s = localStorage.getItem(key);
       if (s) {
         const data = JSON.parse(s);
-        if (data.day >= 1 && data.day <= 4) return data.day;
+        if (data.day >= 1 && data.day <= 4) setTrainingDay(data.day);
+        if (data.place === 'gym' || data.place === 'home') setTrainingPlace(data.place);
+        if (data.completedIds && typeof data.completedIds === 'object') setTrainingCompletedIds(data.completedIds);
+        if (data.sessionDate && /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDate)) setTrainingSessionDate(data.sessionDate);
+        if (data.weightHistory && typeof data.weightHistory === 'object') setWeightHistory(data.weightHistory);
+        if (typeof data.week === 'number' && data.week >= 1 && data.week <= 12) setTrainingWeek(data.week);
+        if (typeof data.notes === 'string') setTrainingNotes(data.notes);
       }
     } catch (_) {}
-    return 1;
-  });
-  const [trainingPlace, setTrainingPlace] = useState(() => {
-    try {
-      const s = localStorage.getItem(TRAINING_STORAGE_KEY);
-      if (s) {
-        const data = JSON.parse(s);
-        if (data.place === 'gym' || data.place === 'home') return data.place;
-      }
-    } catch (_) {}
-    return 'gym';
-  });
-  const [trainingCompletedIds, setTrainingCompletedIds] = useState(() => {
-    try {
-      const s = localStorage.getItem(TRAINING_STORAGE_KEY);
-      if (s) {
-        const data = JSON.parse(s);
-        if (data.completedIds && typeof data.completedIds === 'object') return data.completedIds;
-      }
-    } catch (_) {}
-    return {};
-  });
-  const [trainingSessionDate, setTrainingSessionDate] = useState(() => {
-    try {
-      const s = localStorage.getItem(TRAINING_STORAGE_KEY);
-      if (s) {
-        const data = JSON.parse(s);
-        if (data.sessionDate && /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDate)) return data.sessionDate;
-      }
-    } catch (_) {}
-    return todayKey();
-  });
-  const [weightHistory, setWeightHistory] = useState(() => {
-    try {
-      const s = localStorage.getItem(TRAINING_STORAGE_KEY);
-      if (s) {
-        const data = JSON.parse(s);
-        if (data.weightHistory && typeof data.weightHistory === 'object') return data.weightHistory;
-      }
-    } catch (_) {}
-    return {};
-  });
+  }, [user]);
 
   const currentProgram = trainingDay === 2 ? TRAINING_PROGRAM_B : TRAINING_PROGRAM_A;
   const currentProgramLabel = trainingDay === 2 ? 'Program B' : 'Program A';
@@ -218,19 +194,23 @@ export default function App() {
   };
 
   useEffect(() => {
+    const key = user ? getTrainingStorageKey(user.id) : null;
+    if (!key) return;
     try {
       localStorage.setItem(
-        TRAINING_STORAGE_KEY,
+        key,
         JSON.stringify({
           day: trainingDay,
           place: trainingPlace,
           completedIds: trainingCompletedIds,
           sessionDate: trainingSessionDate,
           weightHistory,
+          week: trainingWeek,
+          notes: trainingNotes,
         })
       );
     } catch (_) {}
-  }, [trainingDay, trainingPlace, trainingCompletedIds, trainingSessionDate, weightHistory]);
+  }, [user, trainingDay, trainingPlace, trainingCompletedIds, trainingSessionDate, weightHistory, trainingWeek, trainingNotes]);
 
   const toggleTrainingDone = (id) => {
     setTrainingCompletedIds((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -298,7 +278,7 @@ export default function App() {
     e.preventDefault();
     const foundUser = FAMILY_MEMBERS[pin];
     if (foundUser) {
-      setUser(foundUser);
+      setUser({ ...foundUser, id: pin });
       setPin('');
     } else {
       alert('รหัสผ่านไม่ถูกต้อง');
@@ -488,14 +468,57 @@ export default function App() {
 
         {activeTab === 'exercise' && (
           <div className="space-y-4 pb-2">
-            {/* หัวข้อตาม PDF: แผนสร้างกล้ามเนื้อ 3 เดือน */}
+            {/* หัวข้อ: แผนสร้างกล้ามเนื้อ 12 สัปดาห์ (3 เดือน) */}
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10">
               <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                 <Dumbbell className="w-5 h-5 text-cyan-400" />
-                แผนสร้างกล้ามเนื้อ 3 เดือน (Phase 1)
+                แผนสร้างกล้ามเนื้อ 12 สัปดาห์ (3 เดือน)
               </h2>
-              <p className="text-cyan-400/90 text-xs font-medium mt-1">รุ่น Hybrid · WEEK 1: วีคแห่งการปรับตัว (Anatomical Adaptation)</p>
-              <p className="text-slate-400 text-sm mt-1">แตะแต่ละท่าเพื่อบันทึกว่าทำแล้ว · ข้อมูลบันทึกในเครื่องอัตโนมัติ</p>
+              <p className="text-cyan-400/90 text-xs font-medium mt-1">รุ่น Hybrid · บัญชี: {user?.name ?? '—'}</p>
+              <p className="text-slate-400 text-sm mt-1">แตะแต่ละท่าเพื่อบันทึก · แผนแยกตามสมาชิก (คนละบัญชี)</p>
+            </div>
+
+            {/* ช่วงสัปดาห์: แสดงทีละ 3 สัปดาห์ */}
+            <div className="space-y-2">
+              <p className="text-slate-400 text-xs uppercase tracking-wider px-1">ช่วงสัปดาห์ (แสดงทีละ 3 สัปดาห์)</p>
+              <div className="flex gap-2 flex-wrap">
+                {[1, 4, 7, 10].map((start) => {
+                  const end = start + 2;
+                  const isActive = trainingWeek >= start && trainingWeek <= end;
+                  return (
+                    <button
+                      key={start}
+                      type="button"
+                      onClick={() => setTrainingWeek(start)}
+                      className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                        isActive ? 'bg-cyan-500/25 text-cyan-400 border border-cyan-400/40' : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      สัปดาห์ที่ {start}–{end}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {[0, 1, 2].map((i) => {
+                  const w = Math.floor((trainingWeek - 1) / 3) * 3 + i + 1;
+                  if (w > 12) return null;
+                  const isActive = trainingWeek === w;
+                  return (
+                    <button
+                      key={w}
+                      type="button"
+                      onClick={() => setTrainingWeek(w)}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                        isActive ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-slate-400 border border-white/10'
+                      }`}
+                    >
+                      สัปดาห์ที่ {w}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-slate-500 text-xs px-1">กำลังดู: สัปดาห์ที่ {trainingWeek} · วัน 1 (A) / 2 (B) / 3 (A) / พัก</p>
             </div>
 
             {/* Day selector: 1 2 3 4(พัก) */}
@@ -805,6 +828,19 @@ export default function App() {
                 </div>
               </>
             )}
+
+            {/* โน๊ต: บันทึกสิ่งที่จำเป็น (แยกตามบัญชีสมาชิก) */}
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10">
+              <label className="block text-sm font-semibold text-slate-300 mb-2">โน๊ต · บันทึกสิ่งที่จำเป็น</label>
+              <textarea
+                value={trainingNotes}
+                onChange={(e) => setTrainingNotes(e.target.value)}
+                placeholder="เช่น น้ำหนักเป้า สัปดาห์นี้, อาการบาดเจ็บ, วันที่หยุดยิม..."
+                rows={3}
+                className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 text-slate-100 text-sm placeholder-slate-500 focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/30 focus:outline-none resize-y min-h-[80px]"
+              />
+              <p className="text-slate-500 text-[10px] mt-1">บันทึกอัตโนมัติตามบัญชีที่ล็อกอิน</p>
+            </div>
           </div>
         )}
 
