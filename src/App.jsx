@@ -36,7 +36,7 @@ const TRAINING_PROGRAM_A = [
   { id: 'a2', nameGym: 'Chest Press Machine (15-20 kg)', nameHome: 'Board Push-up 🔵 สีน้ำเงิน (อก)', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'Chest Press Machine gym', searchKeyHome: 'push up board chest poitrine' },
   { id: 'a3', nameGym: 'Lat Pulldown (20-25 kg)', nameHome: 'Board Push-up 🟡 สีเหลือง (หลัง) จังหวะยุบตัวบีบสะบัก', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'Lat Pulldown how to', searchKeyHome: 'push up board back dos' },
   { id: 'a4', nameGym: 'Dumbbell Shoulder Press (4-6 kg/ข้าง)', nameHome: 'Board Push-up 🔴 สีแดง (ไหล่)', sets: 3, reps: '8-12', unit: 'ครั้ง', searchKey: 'Dumbbell Shoulder Press', searchKeyHome: 'push up board shoulders epaules' },
-  { id: 'a5', nameGym: 'Plank แกนกลาง', nameHome: 'Plank (ทำเหมือนเดิม)', sets: 3, reps: '45', unit: 'วินาที', searchKey: 'Plank exercise form', searchKeyHome: 'plank exercise at home' },
+  { id: 'a5', nameGym: 'Plank แกนกลาง', nameHome: 'Plank (ทำเหมือนเดิม)', sets: 3, reps: '45', unit: 'วินาที', searchKey: 'Plank exercise form', searchKeyHome: 'plank exercise at home', inputUnit: 's' },
 ];
 
 const TRAINING_PROGRAM_B = [
@@ -205,21 +205,22 @@ export default function App() {
       .slice(0, 6);
     return entries;
   };
-  /** คำแนะนำสำหรับครั้งนี้: น้ำหนักล่าสุด แนวโน้ม และข้อความแนะนำ */
-  const getWeightSuggestion = (exerciseId) => {
+  /** คำแนะนำสำหรับครั้งนี้: น้ำหนัก/เวลาล่าสุด แนวโน้ม และข้อความแนะนำ (unit = 'kg' หรือ 's') */
+  const getWeightSuggestion = (exerciseId, unit = 'kg') => {
     const history = getWeightHistoryForExercise(exerciseId);
     const beforeToday = currentSessionDate ? history.filter((h) => h.date < currentSessionDate) : [];
     const last = beforeToday[0];
     const prev = beforeToday[1];
     if (!last) return { lastWeight: null, trend: null, suggestText: null };
     const lastWeight = last.weight;
-    if (!prev) return { lastWeight, trend: null, suggestText: `ใช้ ${lastWeight} kg เท่าเดิม หรือลองเพิ่ม 2.5 kg` };
+    const step = unit === 's' ? '5 s' : '2.5 kg';
+    if (!prev) return { lastWeight, trend: null, suggestText: `ใช้ ${lastWeight} ${unit} เท่าเดิม หรือลองเพิ่ม ${step}` };
     const prevWeight = prev.weight;
     const trend = lastWeight > prevWeight ? 'up' : lastWeight < prevWeight ? 'down' : 'same';
     const trendText = trend === 'up' ? 'แนวโน้มเพิ่ม' : trend === 'down' ? 'ลดลง' : 'เท่าเดิม';
     const suggestText = trend === 'same'
-      ? `ใช้ ${lastWeight} kg เท่าเดิม หรือลองเพิ่ม 2.5 kg`
-      : `ใช้ ${lastWeight} kg (${trendText})`;
+      ? `ใช้ ${lastWeight} ${unit} เท่าเดิม หรือลองเพิ่ม ${step}`
+      : `ใช้ ${lastWeight} ${unit} (${trendText})`;
     return { lastWeight, prevWeight, trend, suggestText };
   };
   const setExerciseWeight = (exerciseId, value) => {
@@ -269,6 +270,13 @@ export default function App() {
     .sort((a, b) => (b.savedAt > a.savedAt ? 1 : -1))[0];
   const saveSessionRecord = () => {
     if (!currentSessionDate || trainingDay === 4) return;
+    const weightsToSave = { ...currentSessionWeights };
+    currentDayIds.forEach((id) => {
+      if (weightsToSave[id] == null) {
+        const last = getLastWeightForExercise(id);
+        if (last != null) weightsToSave[id] = last;
+      }
+    });
     setSessionRecords((prev) =>
       prev.concat({
         sessionDate: currentSessionDate,
@@ -276,9 +284,13 @@ export default function App() {
         week: trainingWeek,
         day: trainingDay,
         plan: getPlanForDay(trainingWeek, trainingDay),
-        weights: { ...currentSessionWeights },
+        weights: weightsToSave,
       })
     );
+    setWeightHistory((prev) => ({
+      ...prev,
+      [currentSessionDate]: { ...(prev[currentSessionDate] || {}), ...weightsToSave },
+    }));
   };
 
   const toggleTrainingDone = (id) => {
@@ -713,8 +725,10 @@ export default function App() {
               const done = trainingCompletedIds[ex.id];
               const repDisplay = ex.unit ? `${ex.reps} ${ex.unit}` : ex.reps;
               const isWarmup = ex.id === 'a0' || ex.id === 'b0';
+              const inputUnit = ex.inputUnit || 'kg';
               const currentWeight = currentSessionWeights[ex.id];
               const lastWeight = getLastWeightForExercise(ex.id);
+              const displayValue = currentWeight != null ? currentWeight : lastWeight;
               const searchKey = getExerciseSearchKey(ex, trainingPlace);
               return (
                 <div
@@ -737,13 +751,13 @@ export default function App() {
                         {ex.sets} เซต {repDisplay !== '-' ? `· ${repDisplay}` : ''}
                       </p>
                       {!isWarmup && (() => {
-                        const suggestion = getWeightSuggestion(ex.id);
+                        const suggestion = getWeightSuggestion(ex.id, inputUnit);
                         const history = getWeightHistoryForExercise(ex.id);
                         return (
                           <div className="mt-2 space-y-1.5">
                             {suggestion.lastWeight != null && (
                               <p className="text-cyan-400/90 text-xs font-medium">
-                                ครั้งก่อน: {suggestion.lastWeight} kg
+                                ครั้งก่อน: <span className="text-emerald-400/95">{suggestion.lastWeight} {inputUnit}</span>
                                 {suggestion.suggestText != null && (
                                   <span className="block text-emerald-400/90 font-normal mt-0.5">แนะนำ: {suggestion.suggestText}</span>
                                 )}
@@ -757,7 +771,7 @@ export default function App() {
                                     key={date}
                                     className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/10 text-slate-300 text-[11px] border border-white/10"
                                   >
-                                    {formatDateThai(date)} {weight} kg
+                                    {formatDateThai(date)} {weight} {inputUnit}
                                   </span>
                                 ))}
                               </div>
@@ -790,15 +804,15 @@ export default function App() {
                       <Weight className="w-4 h-4 text-slate-500" />
                       <input
                         type="number"
-                        inputMode="decimal"
+                        inputMode={inputUnit === 's' ? 'numeric' : 'decimal'}
                         min="0"
-                        step="0.5"
-                        placeholder="kg"
-                        value={currentWeight != null ? String(currentWeight) : ''}
+                        step={inputUnit === 's' ? 1 : 0.5}
+                        placeholder={inputUnit}
+                        value={displayValue != null ? String(displayValue) : ''}
                         onChange={(e) => setExerciseWeight(ex.id, e.target.value)}
                         className="w-14 text-right bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-slate-100 text-sm focus:border-cyan-400/50 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
-                      <span className="text-slate-500 text-xs">kg</span>
+                      <span className="text-slate-500 text-xs">{inputUnit}</span>
                     </div>
                   )}
                 </div>
@@ -814,8 +828,10 @@ export default function App() {
                   {SHOULDER_EXTRA.map((ex) => {
                     const name = trainingPlace === 'gym' ? ex.nameGym : ex.nameHome;
                     const done = trainingCompletedIds[ex.id];
+                    const inputUnit = ex.inputUnit || 'kg';
                     const currentWeight = currentSessionWeights[ex.id];
                     const lastWeight = getLastWeightForExercise(ex.id);
+                    const displayValue = currentWeight != null ? currentWeight : lastWeight;
                     const searchKey = getExerciseSearchKey(ex, trainingPlace);
                     return (
                       <div
@@ -841,13 +857,13 @@ export default function App() {
                               )}
                             </p>
                             {(() => {
-                              const suggestion = getWeightSuggestion(ex.id);
+                              const suggestion = getWeightSuggestion(ex.id, inputUnit);
                               const history = getWeightHistoryForExercise(ex.id);
                               return (
                                 <div className="mt-2 space-y-1.5">
                                   {suggestion.lastWeight != null && (
                                     <p className="text-cyan-400/90 text-xs font-medium">
-                                      ครั้งก่อน: {suggestion.lastWeight} kg
+                                      ครั้งก่อน: <span className="text-emerald-400/95">{suggestion.lastWeight} {inputUnit}</span>
                                       {suggestion.suggestText != null && (
                                         <span className="block text-emerald-400/90 font-normal mt-0.5">แนะนำ: {suggestion.suggestText}</span>
                                       )}
@@ -861,7 +877,7 @@ export default function App() {
                                           key={date}
                                           className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/10 text-slate-300 text-[11px] border border-white/10"
                                         >
-                                          {formatDateThai(date)} {weight} kg
+                                          {formatDateThai(date)} {weight} {inputUnit}
                                         </span>
                                       ))}
                                     </div>
@@ -893,15 +909,15 @@ export default function App() {
                           <Weight className="w-4 h-4 text-slate-500" />
                           <input
                             type="number"
-                            inputMode="decimal"
+                            inputMode={inputUnit === 's' ? 'numeric' : 'decimal'}
                             min="0"
-                            step="0.5"
-                            placeholder="kg"
-                            value={currentWeight != null ? String(currentWeight) : ''}
+                            step={inputUnit === 's' ? 1 : 0.5}
+                            placeholder={inputUnit}
+                            value={displayValue != null ? String(displayValue) : ''}
                             onChange={(e) => setExerciseWeight(ex.id, e.target.value)}
                             className="w-14 text-right bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-slate-100 text-sm focus:border-cyan-400/50 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
-                          <span className="text-slate-500 text-xs">kg</span>
+                          <span className="text-slate-500 text-xs">{inputUnit}</span>
                         </div>
                       </div>
                     );
