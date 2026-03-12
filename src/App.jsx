@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image, Navigation } from 'lucide-react';
+import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image, Navigation, ChevronRight, Save } from 'lucide-react';
 
 // ==========================================
 // 📍 ตั้งค่าพิกัดบ้าน (Latitude, Longitude)
@@ -55,9 +55,21 @@ const SHOULDER_EXTRA = [
 
 const TRAINING_STORAGE_KEY_PREFIX = 'smartgate_training';
 const getTrainingStorageKey = (userId) => (userId ? `${TRAINING_STORAGE_KEY_PREFIX}_${userId}` : null);
-const getCurrentDayExerciseIds = (day) => {
+
+/** สัปดาห์คี่ (1,3,5...): วัน1=A, วัน2=B, วัน3=A. สัปดาห์คู่ (2,4,6...): วัน1=B, วัน2=A, วัน3=B */
+const getPlanForDay = (week, day) => {
+  if (day === 4) return null;
+  const isOddWeek = week % 2 === 1;
+  if (day === 1) return isOddWeek ? 'A' : 'B';
+  if (day === 2) return isOddWeek ? 'B' : 'A';
+  if (day === 3) return isOddWeek ? 'A' : 'B';
+  return 'A';
+};
+const getProgramForWeekDay = (week, day) =>
+  getPlanForDay(week, day) === 'B' ? TRAINING_PROGRAM_B : TRAINING_PROGRAM_A;
+const getCurrentDayExerciseIds = (week, day) => {
   if (day === 4) return [];
-  const program = day === 2 ? TRAINING_PROGRAM_B : TRAINING_PROGRAM_A;
+  const program = getProgramForWeekDay(week, day);
   return [...program.map((e) => e.id), ...SHOULDER_EXTRA.map((e) => e.id)];
 };
 
@@ -68,6 +80,19 @@ const THAI_MONTH_ABBR = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', '
 const formatDateThai = (dateKey) => {
   const [y, m, d] = dateKey.split('-').map(Number);
   return `${d} ${THAI_MONTH_ABBR[m - 1]}`;
+};
+const formatSavedAt = (isoString) => {
+  try {
+    const d = new Date(isoString);
+    const day = d.getDate();
+    const month = THAI_MONTH_ABBR[d.getMonth()];
+    const year = d.getFullYear();
+    const h = d.getHours();
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${day} ${month} ${year} ${h}:${min}`;
+  } catch (_) {
+    return isoString;
+  }
 };
 
 const getExerciseSearchKey = (ex) => ex.searchKey || ex.nameGym.replace(/\s*\([^)]*\)\s*$/, '').trim() || 'exercise';
@@ -121,6 +146,7 @@ export default function App() {
   const [weightHistory, setWeightHistory] = useState({});
   const [trainingWeek, setTrainingWeek] = useState(1);
   const [trainingNotes, setTrainingNotes] = useState('');
+  const [sessionRecords, setSessionRecords] = useState([]);
 
   const currentSessionDate = trainingDay >= 1 && trainingDay <= 3 ? (sessionDateByDay[trainingDay] || todayKey()) : null;
 
@@ -147,13 +173,14 @@ export default function App() {
         if (data.weightHistory && typeof data.weightHistory === 'object') setWeightHistory(data.weightHistory);
         if (typeof data.week === 'number' && data.week >= 1 && data.week <= 12) setTrainingWeek(data.week);
         if (typeof data.notes === 'string') setTrainingNotes(data.notes);
+        if (Array.isArray(data.sessionRecords)) setSessionRecords(data.sessionRecords);
       }
     } catch (_) {}
   }, [user]);
 
-  const currentProgram = trainingDay === 2 ? TRAINING_PROGRAM_B : TRAINING_PROGRAM_A;
-  const currentProgramLabel = trainingDay === 2 ? 'Program B' : 'Program A';
-  const currentDayIds = getCurrentDayExerciseIds(trainingDay);
+  const currentProgram = getProgramForWeekDay(trainingWeek, trainingDay);
+  const currentProgramLabel = getPlanForDay(trainingWeek, trainingDay) ? `Program ${getPlanForDay(trainingWeek, trainingDay)}` : '';
+  const currentDayIds = getCurrentDayExerciseIds(trainingWeek, trainingDay);
   const trainingDoneCount = currentDayIds.filter((id) => trainingCompletedIds[id]).length;
   const trainingTotalCount = currentDayIds.length;
   const trainingAllDone = trainingTotalCount > 0 && trainingDoneCount === trainingTotalCount;
@@ -224,10 +251,31 @@ export default function App() {
           weightHistory,
           week: trainingWeek,
           notes: trainingNotes,
+          sessionRecords,
         })
       );
     } catch (_) {}
-  }, [user, trainingDay, trainingPlace, trainingCompletedIds, sessionDateByDay, weightHistory, trainingWeek, trainingNotes]);
+  }, [user, trainingDay, trainingPlace, trainingCompletedIds, sessionDateByDay, weightHistory, trainingWeek, trainingNotes, sessionRecords]);
+
+  const lastSavedForCurrentSession = sessionRecords
+    .filter(
+      (r) =>
+        r.sessionDate === currentSessionDate && r.week === trainingWeek && r.day === trainingDay
+    )
+    .sort((a, b) => (b.savedAt > a.savedAt ? 1 : -1))[0];
+  const saveSessionRecord = () => {
+    if (!currentSessionDate || trainingDay === 4) return;
+    setSessionRecords((prev) =>
+      prev.concat({
+        sessionDate: currentSessionDate,
+        savedAt: new Date().toISOString(),
+        week: trainingWeek,
+        day: trainingDay,
+        plan: getPlanForDay(trainingWeek, trainingDay),
+        weights: { ...currentSessionWeights },
+      })
+    );
+  };
 
   const toggleTrainingDone = (id) => {
     setTrainingCompletedIds((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -535,10 +583,22 @@ export default function App() {
                   );
                 })}
               </div>
-              <p className="text-slate-500 text-xs px-1">กำลังดู: สัปดาห์ที่ {trainingWeek} · วัน 1 (A) / 2 (B) / 3 (A) / พัก</p>
+              <p className="text-slate-500 text-xs px-1">
+                กำลังดู: สัปดาห์ที่ {trainingWeek} · วัน 1 ({getPlanForDay(trainingWeek, 1)}) / 2 ({getPlanForDay(trainingWeek, 2)}) / 3 ({getPlanForDay(trainingWeek, 3)}) / พัก
+              </p>
+              {trainingWeek < 12 && (
+                <button
+                  type="button"
+                  onClick={() => setTrainingWeek((w) => Math.min(12, w + 1))}
+                  className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-400/30 hover:bg-cyan-500/30 transition-colors text-sm font-medium"
+                >
+                  เลื่อนไปสัปดาห์ต่อไป
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
-            {/* Day selector: 1 2 3 4(พัก) */}
+            {/* Day selector: 1 2 3 4(พัก) — แผน A/B ตามสัปดาห์คี่/คู่ */}
             <div className="flex gap-2">
               {[1, 2, 3].map((d) => (
                 <button
@@ -551,7 +611,7 @@ export default function App() {
                   }`}
                 >
                   วัน {d}
-                  <span className="block text-xs opacity-80">{d === 2 ? 'B' : 'A'}</span>
+                  <span className="block text-xs opacity-80">{getPlanForDay(trainingWeek, d) ?? '-'}</span>
                 </button>
               ))}
               <button
@@ -572,7 +632,7 @@ export default function App() {
                 <h3 className="text-lg font-bold text-slate-100">วันพักผ่อน (Rest Day)</h3>
                 <p className="text-slate-300 text-sm mt-2">ดื่มน้ำ 2.5–3 ลิตร</p>
                 <p className="text-slate-300 text-sm">กินโปรตีนให้ถึงเป้า</p>
-                <p className="text-slate-400 text-xs mt-4">วันต่อไป: กลับไปวัน 1 (Program A)</p>
+                <p className="text-slate-400 text-xs mt-4">วันต่อไป: กลับไปวัน 1 (Program {getPlanForDay(trainingWeek, 1) ?? 'A'})</p>
               </div>
             )}
 
@@ -843,6 +903,28 @@ export default function App() {
                     );
                   })}
                 </div>
+
+                {/* เมื่อทำครบทั้งวัน: ปุ่มบันทึก น้ำหนัก + วันเวลา */}
+                {trainingAllDone && (
+                  <div className="pt-4 border-t border-white/10 space-y-2">
+                    {lastSavedForCurrentSession ? (
+                      <p className="text-slate-400 text-xs">
+                        บันทึกแล้วเมื่อ {formatSavedAt(lastSavedForCurrentSession.savedAt)}
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={saveSessionRecord}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 hover:bg-emerald-500/30 transition-colors text-sm font-medium"
+                    >
+                      <Save className="w-5 h-5" />
+                      บันทึก น้ำหนักที่ทำได้ + วันเวลาที่บันทึก
+                    </button>
+                    <p className="text-slate-500 text-[10px] text-center">
+                      เก็บไว้เป็นข้อมูลอ้างอิง (สัปดาห์ที่ {trainingWeek} · วันที่ {trainingDay} · Plan {getPlanForDay(trainingWeek, trainingDay)})
+                    </p>
+                  </div>
+                )}
               </>
             )}
 
