@@ -29,28 +29,29 @@ const TABS = [
 // ==========================================
 // 🏋️ ตารางฝึก 3 เดือน (จากแผน Hybrid) + โฟกัสหัวไหล่
 // ==========================================
+// searchKey = ค้นวีดีโอตอนอยู่ยิม, searchKeyHome = ค้นวีดีโอตอนอยู่บ้าน/โรงแรม (Board Push-up ตามสี: 🔵อก 🟡หลัง 🔴ไหล่ 🟢หลังแขน)
 const TRAINING_PROGRAM_A = [
-  { id: 'a0', nameGym: 'Warm-up: ปั่นจักรยาน/เดินชัน 10 นาที', nameHome: 'ย่ำเท้าอยู่กับที่ / แกว่งแขน 5 นาที', sets: 1, reps: '-', unit: '', searchKey: 'treadmill incline walk warm up' },
-  { id: 'a1', nameGym: 'Goblet Squat (8-10 kg)', nameHome: 'Bodyweight Squat ลุกนั่งมือเปล่า 15-20 ครั้ง', sets: 3, reps: '12', unit: 'ครั้ง', searchKey: 'Goblet Squat how to' },
-  { id: 'a2', nameGym: 'Chest Press Machine (15-20 kg)', nameHome: 'Board Push-up 🔵 สีน้ำเงิน (อก)', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'Chest Press Machine gym' },
-  { id: 'a3', nameGym: 'Lat Pulldown (20-25 kg)', nameHome: 'Board Push-up 🟡 สีเหลือง (หลัง) จังหวะยุบตัวบีบสะบัก', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'Lat Pulldown how to' },
-  { id: 'a4', nameGym: 'Dumbbell Shoulder Press (4-6 kg/ข้าง)', nameHome: 'Board Push-up 🔴 สีแดง (ไหล่)', sets: 3, reps: '8-12', unit: 'ครั้ง', searchKey: 'Dumbbell Shoulder Press' },
-  { id: 'a5', nameGym: 'Plank แกนกลาง', nameHome: 'Plank (ทำเหมือนเดิม)', sets: 3, reps: '45', unit: 'วินาที', searchKey: 'Plank exercise form' },
+  { id: 'a0', nameGym: 'Warm-up: ปั่นจักรยาน/เดินชัน 10 นาที', nameHome: 'ย่ำเท้าอยู่กับที่ / แกว่งแขน 5 นาที', sets: 1, reps: '-', unit: '', searchKey: 'treadmill incline walk warm up', searchKeyHome: 'marching in place arm swing warm up' },
+  { id: 'a1', nameGym: 'Goblet Squat (8-10 kg)', nameHome: 'Bodyweight Squat ลุกนั่งมือเปล่า 15-20 ครั้ง', sets: 3, reps: '12', unit: 'ครั้ง', searchKey: 'Goblet Squat how to', searchKeyHome: 'bodyweight squat at home' },
+  { id: 'a2', nameGym: 'Chest Press Machine (15-20 kg)', nameHome: 'Board Push-up 🔵 สีน้ำเงิน (อก)', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'Chest Press Machine gym', searchKeyHome: 'push up board chest poitrine' },
+  { id: 'a3', nameGym: 'Lat Pulldown (20-25 kg)', nameHome: 'Board Push-up 🟡 สีเหลือง (หลัง) จังหวะยุบตัวบีบสะบัก', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'Lat Pulldown how to', searchKeyHome: 'push up board back dos' },
+  { id: 'a4', nameGym: 'Dumbbell Shoulder Press (4-6 kg/ข้าง)', nameHome: 'Board Push-up 🔴 สีแดง (ไหล่)', sets: 3, reps: '8-12', unit: 'ครั้ง', searchKey: 'Dumbbell Shoulder Press', searchKeyHome: 'push up board shoulders epaules' },
+  { id: 'a5', nameGym: 'Plank แกนกลาง', nameHome: 'Plank (ทำเหมือนเดิม)', sets: 3, reps: '45', unit: 'วินาที', searchKey: 'Plank exercise form', searchKeyHome: 'plank exercise at home' },
 ];
 
 const TRAINING_PROGRAM_B = [
-  { id: 'b0', nameGym: 'Warm-up: เดินชัน (Incline Walk) 10 นาที', nameHome: 'Jumping Jacks กระโดดตบเบาๆ 5 นาที', sets: 1, reps: '-', unit: '', searchKey: 'incline walk treadmill' },
-  { id: 'b1', nameGym: 'Leg Press Machine (30-40 kg)', nameHome: 'Lunges ก้าวเท้าย่อตัวสลับซ้าย-ขวา ข้างละ 10 ครั้ง', sets: 3, reps: '12', unit: 'ครั้ง', searchKey: 'Leg Press Machine gym' },
-  { id: 'b2', nameGym: 'Seated Cable Row (20-25 kg)', nameHome: 'Board Push-up 🟡 สีเหลือง (หลัง) เกร็งค้างตอนตัวลงต่ำสุด', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'Seated Cable Row' },
-  { id: 'b3', nameGym: 'Dumbbell Incline Press (อกบน)', nameHome: 'Decline Board Push-up 🔵 เอาเท้าพาดบนเตียง/เก้าอี้ แล้ววิดพื้น', sets: 3, reps: '10-12', unit: 'ครั้ง', searchKey: 'Dumbbell Incline Press' },
-  { id: 'b4', nameGym: 'Dumbbell Biceps Curl (5-7 kg/ข้าง)', nameHome: 'ยกกระเป๋าเป้ใส่หนังสือ/ขวดน้ำ (พับศอกยก)', sets: 2, reps: '12-15', unit: 'ครั้ง', searchKey: 'Dumbbell Biceps Curl' },
-  { id: 'b5', nameGym: 'Triceps Rope Pushdown (10-15 kg)', nameHome: 'Board Push-up 🟢 สีเขียว (หลังแขน) ศอกหนีบลำตัว', sets: 2, reps: '10-15', unit: 'ครั้ง', searchKey: 'Triceps Rope Pushdown' },
+  { id: 'b0', nameGym: 'Warm-up: เดินชัน (Incline Walk) 10 นาที', nameHome: 'Jumping Jacks กระโดดตบเบาๆ 5 นาที', sets: 1, reps: '-', unit: '', searchKey: 'incline walk treadmill', searchKeyHome: 'jumping jacks warm up' },
+  { id: 'b1', nameGym: 'Leg Press Machine (30-40 kg)', nameHome: 'Lunges ก้าวเท้าย่อตัวสลับซ้าย-ขวา ข้างละ 10 ครั้ง', sets: 3, reps: '12', unit: 'ครั้ง', searchKey: 'Leg Press Machine gym', searchKeyHome: 'lunges at home' },
+  { id: 'b2', nameGym: 'Seated Cable Row (20-25 kg)', nameHome: 'Board Push-up 🟡 สีเหลือง (หลัง) เกร็งค้างตอนตัวลงต่ำสุด', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'Seated Cable Row', searchKeyHome: 'push up board back dos' },
+  { id: 'b3', nameGym: 'Dumbbell Incline Press (อกบน)', nameHome: 'Decline Board Push-up 🔵 เอาเท้าพาดบนเตียง/เก้าอี้ แล้ววิดพื้น', sets: 3, reps: '10-12', unit: 'ครั้ง', searchKey: 'Dumbbell Incline Press', searchKeyHome: 'decline push up chest' },
+  { id: 'b4', nameGym: 'Dumbbell Biceps Curl (5-7 kg/ข้าง)', nameHome: 'ยกกระเป๋าเป้ใส่หนังสือ/ขวดน้ำ (พับศอกยก)', sets: 2, reps: '12-15', unit: 'ครั้ง', searchKey: 'Dumbbell Biceps Curl', searchKeyHome: 'bicep curl at home no equipment' },
+  { id: 'b5', nameGym: 'Triceps Rope Pushdown (10-15 kg)', nameHome: 'Board Push-up 🟢 สีเขียว (หลังแขน) ศอกหนีบลำตัว', sets: 2, reps: '10-15', unit: 'ครั้ง', searchKey: 'Triceps Rope Pushdown', searchKeyHome: 'push up board triceps' },
 ];
 
 // พิเศษ: โฟกัสหัวไหล่ให้กว้าง (เพิ่มทุกวันที่ฝึก)
 const SHOULDER_EXTRA = [
-  { id: 's1', nameGym: 'Lateral Raise (4-6 kg/ข้าง)', nameHome: 'ยกขวดน้ำด้านข้าง แขนตรง', sets: 3, reps: '12-15', unit: 'ครั้ง', badge: 'หัวไหล่กว้าง', searchKey: 'Lateral Raise dumbbell' },
-  { id: 's2', nameGym: 'Cable/Band Lateral Raise หรือ Reverse Fly', nameHome: 'ยางยืดยกด้านข้าง / ดึงยางด้านหลัง', sets: 2, reps: '15', unit: 'ครั้ง', badge: 'หัวไหล่กว้าง', searchKey: 'Cable Lateral Raise Reverse Fly' },
+  { id: 's1', nameGym: 'Lateral Raise (4-6 kg/ข้าง)', nameHome: 'ยกขวดน้ำด้านข้าง แขนตรง', sets: 3, reps: '12-15', unit: 'ครั้ง', badge: 'หัวไหล่กว้าง', searchKey: 'Lateral Raise dumbbell', searchKeyHome: 'lateral raise at home bottle' },
+  { id: 's2', nameGym: 'Cable/Band Lateral Raise หรือ Reverse Fly', nameHome: 'ยางยืดยกด้านข้าง / ดึงยางด้านหลัง', sets: 2, reps: '15', unit: 'ครั้ง', badge: 'หัวไหล่กว้าง', searchKey: 'Cable Lateral Raise Reverse Fly', searchKeyHome: 'resistance band lateral raise' },
 ];
 
 const TRAINING_STORAGE_KEY_PREFIX = 'smartgate_training';
@@ -95,7 +96,10 @@ const formatSavedAt = (isoString) => {
   }
 };
 
-const getExerciseSearchKey = (ex) => ex.searchKey || ex.nameGym.replace(/\s*\([^)]*\)\s*$/, '').trim() || 'exercise';
+const getExerciseSearchKey = (ex, place) => {
+  if (place === 'home' && ex.searchKeyHome) return ex.searchKeyHome;
+  return ex.searchKey || ex.nameGym.replace(/\s*\([^)]*\)\s*$/, '').trim() || 'exercise';
+};
 const openYouTubeSearch = (query) => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' how to form')}`, '_blank', 'noopener,noreferrer');
 const openGoogleImageSearch = (query) => window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query + ' exercise')}`, '_blank', 'noopener,noreferrer');
 
@@ -711,7 +715,7 @@ export default function App() {
               const isWarmup = ex.id === 'a0' || ex.id === 'b0';
               const currentWeight = currentSessionWeights[ex.id];
               const lastWeight = getLastWeightForExercise(ex.id);
-              const searchKey = getExerciseSearchKey(ex);
+              const searchKey = getExerciseSearchKey(ex, trainingPlace);
               return (
                 <div
                   key={ex.id}
@@ -812,7 +816,7 @@ export default function App() {
                     const done = trainingCompletedIds[ex.id];
                     const currentWeight = currentSessionWeights[ex.id];
                     const lastWeight = getLastWeightForExercise(ex.id);
-                    const searchKey = getExerciseSearchKey(ex);
+                    const searchKey = getExerciseSearchKey(ex, trainingPlace);
                     return (
                       <div
                         key={ex.id}
