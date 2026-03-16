@@ -15,7 +15,7 @@ const MAX_DISTANCE_METERS = 100;
 // 👨‍👩‍👧‍👦 ฐานข้อมูลสมาชิก
 // ==========================================
 const FAMILY_MEMBERS = {
-  '1111': { name: 'ปะป๋าเอส (Admin)', role: 'dad' },
+  '1111': { name: 'ป๋าเอส (Admin)', role: 'dad' },
   '2222': { name: 'ลูกคนที่ 1', role: 'kid' },
   '3333': { name: 'ลูกคนที่ 2', role: 'kid' },
 };
@@ -103,9 +103,9 @@ const getExerciseSearchKey = (ex, place) => {
 const openYouTubeSearch = (query) => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' how to form')}`, '_blank', 'noopener,noreferrer');
 const openGoogleImageSearch = (query) => window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query + ' exercise')}`, '_blank', 'noopener,noreferrer');
 
-// สมาชิกในบ้าน (ปะป๋าเอส + ลูก 4 คน: พู พี พลอส พัตเตอร์)
+// สมาชิกในบ้าน (ป๋าเอส + ลูก 4 คน: พู พี พลอส พัตเตอร์)
 const HOUSEHOLD_MEMBERS = [
-  { id: 'dad', name: 'ปะป๋าเอส' },
+  { id: 'dad', name: 'ป๋าเอส' },
   { id: 'poo', name: 'พู' },
   { id: 'pee', name: 'พี' },
   { id: 'plus', name: 'พลอส' },
@@ -973,7 +973,7 @@ export default function App() {
               <p className="text-slate-400 text-sm mt-1">สิ่งที่ต้องทำในบ้าน · แตะเพื่อทำเครื่องหมายว่าทำแล้ว</p>
             </div>
 
-            {/* สมาชิกในบ้าน: ปะป๋าเอส + พู พี พลอส พัตเตอร์ */}
+            {/* สมาชิกในบ้าน: ป๋าเอส + พู พี พลอส พัตเตอร์ */}
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10">
               <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">สมาชิกในบ้าน</h3>
               <div className="flex flex-wrap gap-2">
@@ -986,7 +986,7 @@ export default function App() {
                   </span>
                 ))}
               </div>
-              <p className="text-slate-500 text-xs mt-3">ปะป๋าเอส + พู · พี · พลอส · พัตเตอร์ (ใส่ตัวอย่างหน้าที่ไว้แล้ว)</p>
+              <p className="text-slate-500 text-xs mt-3">ป๋าเอส + พู · พี · พลอส · พัตเตอร์ (ใส่ตัวอย่างหน้าที่ไว้แล้ว)</p>
               <p className="text-slate-600 text-[10px] mt-1">ข้อมูลเดียวกันทุกอุปกรณ์ · ถ้ามือถือไม่ตรง ให้ล้างแคชหรือรีเฟรช</p>
             </div>
 
