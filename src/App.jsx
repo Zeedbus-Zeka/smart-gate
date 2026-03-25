@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image, Navigation, ChevronRight, Save } from 'lucide-react';
+import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image, Navigation, ChevronRight, Save, Timer, Play, Pause, Square } from 'lucide-react';
 
 // ==========================================
 // 📍 ตั้งค่าพิกัดบ้าน (Latitude, Longitude)
@@ -103,6 +103,84 @@ const getExerciseSearchKey = (ex, place) => {
 const openYouTubeSearch = (query) => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' how to form')}`, '_blank', 'noopener,noreferrer');
 const openGoogleImageSearch = (query) => window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query + ' exercise')}`, '_blank', 'noopener,noreferrer');
 
+const PLANK_EXERCISE_ID = 'a5';
+const PLANK_REST_SECONDS = 60;
+
+/** ค่าเริ่มต้นวินาทีถือ Plank จากช่องกรอกหรือ reps ในตาราง */
+const parsePlankDefaultSeconds = (displayValue, ex) => {
+  const fromField = Number(displayValue);
+  if (Number.isFinite(fromField) && fromField > 0) return Math.round(Math.min(600, Math.max(10, fromField)));
+  const fromReps = parseInt(String(ex.reps).replace(/\D/g, ''), 10);
+  if (Number.isFinite(fromReps) && fromReps > 0) return Math.round(Math.min(600, Math.max(10, fromReps)));
+  return 45;
+};
+
+const formatPlankCountdown = (sec) => {
+  const s = Math.max(0, Math.floor(sec));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return m > 0 ? `${m}:${String(r).padStart(2, '0')}` : String(r);
+};
+
+let plankAudioCtx = null;
+const ensurePlankAudio = () => {
+  try {
+    if (!plankAudioCtx) plankAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (plankAudioCtx.state === 'suspended') void plankAudioCtx.resume();
+    return plankAudioCtx;
+  } catch (_) {
+    return null;
+  }
+};
+const playPlankTone = (freq, duration = 0.22) => {
+  const ctx = ensurePlankAudio();
+  if (!ctx) return;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.connect(g);
+  g.connect(ctx.destination);
+  o.frequency.value = freq;
+  o.type = 'sine';
+  g.gain.setValueAtTime(0.12, ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+  o.start(ctx.currentTime);
+  o.stop(ctx.currentTime + duration);
+};
+
+/** เสียง + สั่น ตามช่วงจับเวลา Plank */
+const playPlankSignal = (kind) => {
+  try {
+    if (kind === 'workDone') {
+      playPlankTone(880, 0.28);
+      setTimeout(() => playPlankTone(660, 0.22), 160);
+      navigator.vibrate?.(180);
+    } else if (kind === 'restStart') {
+      playPlankTone(392, 0.18);
+      navigator.vibrate?.(80);
+    } else if (kind === 'restDone') {
+      playPlankTone(523, 0.2);
+      setTimeout(() => playPlankTone(880, 0.28), 130);
+      navigator.vibrate?.([100, 60, 100]);
+    } else if (kind === 'sessionDone') {
+      playPlankTone(784, 0.25);
+      setTimeout(() => playPlankTone(988, 0.28), 200);
+      setTimeout(() => playPlankTone(1175, 0.35), 420);
+      navigator.vibrate?.([250, 120, 250, 120, 400]);
+    }
+  } catch (_) {}
+};
+
+const createInitialPlankTimer = () => ({
+  open: false,
+  running: false,
+  paused: false,
+  phase: 'idle',
+  workSec: 45,
+  totalSets: 3,
+  currentSet: 1,
+  remaining: 0,
+});
+
 // สมาชิกในบ้าน (ป๋าเอส + ลูก 4 คน: พู พี พลอส พัตเตอร์)
 const HOUSEHOLD_MEMBERS = [
   { id: 'dad', name: 'ป๋าเอส' },
@@ -151,8 +229,39 @@ export default function App() {
   const [trainingWeek, setTrainingWeek] = useState(1);
   const [trainingNotes, setTrainingNotes] = useState('');
   const [sessionRecords, setSessionRecords] = useState([]);
+  const [plankTimer, setPlankTimer] = useState(createInitialPlankTimer);
 
   const currentSessionDate = trainingDay >= 1 && trainingDay <= 3 ? (sessionDateByDay[trainingDay] || todayKey()) : null;
+
+  useEffect(() => {
+    if (!plankTimer.open || !plankTimer.running || plankTimer.paused) return undefined;
+    const id = window.setInterval(() => {
+      setPlankTimer((p) => {
+        if (!p.running || p.paused || p.phase === 'idle' || p.phase === 'done') return p;
+        if (p.remaining > 1) return { ...p, remaining: p.remaining - 1 };
+        if (p.remaining === 1) {
+          if (p.phase === 'work') {
+            if (p.currentSet >= p.totalSets) {
+              playPlankSignal('sessionDone');
+              return { ...p, phase: 'done', remaining: 0, running: false };
+            }
+            playPlankSignal('workDone');
+            playPlankSignal('restStart');
+            return { ...p, phase: 'rest', remaining: PLANK_REST_SECONDS };
+          }
+          playPlankSignal('restDone');
+          return {
+            ...p,
+            phase: 'work',
+            remaining: p.workSec,
+            currentSet: p.currentSet + 1,
+          };
+        }
+        return p;
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [plankTimer.open, plankTimer.running, plankTimer.paused]);
 
   useEffect(() => {
     const key = user ? getTrainingStorageKey(user.id) : null;
@@ -798,6 +907,31 @@ export default function App() {
                     >
                       <Image className="w-5 h-5" />
                     </button>
+                    {ex.id === PLANK_EXERCISE_ID && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          ensurePlankAudio();
+                          const workSec = parsePlankDefaultSeconds(displayValue, ex);
+                          const totalSets = Math.min(10, Math.max(1, Number(ex.sets) || 3));
+                          setPlankTimer({
+                            open: true,
+                            running: false,
+                            paused: false,
+                            phase: 'idle',
+                            workSec,
+                            totalSets,
+                            currentSet: 1,
+                            remaining: 0,
+                          });
+                        }}
+                        className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors border border-cyan-400/25"
+                        title="จับเวลา Plank · พัก 1 นาทีระหว่างเซต"
+                      >
+                        <Timer className="w-5 h-5" />
+                      </button>
+                    )}
                   </div>
                   {!isWarmup && (
                     <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center gap-1">
@@ -946,6 +1080,158 @@ export default function App() {
                   </div>
                 )}
               </>
+            )}
+
+            {plankTimer.open && (
+              <div
+                className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-black/65 backdrop-blur-sm"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="plank-timer-title"
+                onClick={() => {
+                  if (!plankTimer.running && plankTimer.phase !== 'rest' && plankTimer.phase !== 'work') {
+                    setPlankTimer(createInitialPlankTimer());
+                  }
+                }}
+              >
+                <div
+                  className="w-full max-w-sm rounded-2xl border border-cyan-400/20 bg-slate-900/95 backdrop-blur-xl shadow-2xl p-5 space-y-4 max-h-[88vh] overflow-y-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 id="plank-timer-title" className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                      <Timer className="w-5 h-5 text-cyan-400 shrink-0" />
+                      จับเวลา Plank
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPlankTimer(createInitialPlankTimer());
+                      }}
+                      className="text-slate-400 hover:text-slate-200 text-xs font-medium px-2 py-1 rounded-lg bg-white/5 border border-white/10"
+                    >
+                      ปิด
+                    </button>
+                  </div>
+
+                  <p className="text-slate-500 text-xs leading-relaxed">
+                    ถือท่าตามวินาทีที่ตั้ง → เสียงเตือน → พัก {PLANK_REST_SECONDS / 60} นาที → เริ่มเซตถัดไป ครบ {plankTimer.totalSets} เซต
+                  </p>
+
+                  {plankTimer.phase === 'idle' && (
+                    <div className="space-y-3">
+                      <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider">เวลาถือท่า (วินาที)</label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={10}
+                        max={600}
+                        step={1}
+                        value={plankTimer.workSec}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10);
+                          if (Number.isFinite(v)) {
+                            setPlankTimer((p) => ({ ...p, workSec: Math.min(600, Math.max(10, v)) }));
+                          }
+                        }}
+                        className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-slate-100 text-lg font-mono text-center focus:border-cyan-400/50 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          ensurePlankAudio();
+                          setPlankTimer((p) => ({
+                            ...p,
+                            running: true,
+                            paused: false,
+                            phase: 'work',
+                            currentSet: 1,
+                            remaining: p.workSec,
+                          }));
+                        }}
+                        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-cyan-500/25 text-cyan-300 border border-cyan-400/35 hover:bg-cyan-500/35 font-semibold text-sm"
+                      >
+                        <Play className="w-5 h-5" />
+                        เริ่มจับเวลา
+                      </button>
+                    </div>
+                  )}
+
+                  {(plankTimer.phase === 'work' || plankTimer.phase === 'rest') && (
+                    <div className="space-y-4 text-center">
+                      <p className="text-cyan-400/90 text-sm font-medium">
+                        {plankTimer.phase === 'work' ? 'ถือท่า Plank' : 'พัก (เตรียมเซตถัดไป)'}
+                      </p>
+                      <p className="text-slate-500 text-xs">
+                        {plankTimer.phase === 'work'
+                          ? `กำลังเซต ${plankTimer.currentSet} / ${plankTimer.totalSets}`
+                          : `พักก่อนเซต ${plankTimer.currentSet + 1} / ${plankTimer.totalSets} · ถัดไปถือ ${plankTimer.workSec} s`}
+                      </p>
+                      <div
+                        className={`text-5xl sm:text-6xl font-mono font-bold tabular-nums tracking-tight ${
+                          plankTimer.phase === 'work' ? 'text-emerald-400' : 'text-amber-400'
+                        }`}
+                      >
+                        {plankTimer.remaining >= 60 ? (
+                          formatPlankCountdown(plankTimer.remaining)
+                        ) : (
+                          <>
+                            {plankTimer.remaining}
+                            <span className="text-lg font-normal text-slate-500 ml-1">s</span>
+                          </>
+                        )}
+                      </div>
+                      {plankTimer.paused && (
+                        <p className="text-amber-400/80 text-xs font-medium">หยุดชั่วคราว</p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            ensurePlankAudio();
+                            setPlankTimer((p) => ({ ...p, paused: !p.paused }));
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/10 text-slate-200 border border-white/15 text-sm font-medium"
+                        >
+                          {plankTimer.paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                          {plankTimer.paused ? 'ทำต่อ' : 'หยุดชั่วคราว'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPlankTimer((p) => ({
+                              ...createInitialPlankTimer(),
+                              open: true,
+                              workSec: p.workSec,
+                              totalSets: p.totalSets,
+                            }));
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/15 text-red-300 border border-red-400/25 text-sm font-medium"
+                        >
+                          <Square className="w-4 h-4" />
+                          ยกเลิก
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {plankTimer.phase === 'done' && (
+                    <div className="space-y-4 text-center py-2">
+                      <p className="text-emerald-400 font-semibold text-lg">ครบ {plankTimer.totalSets} เซตแล้ว</p>
+                      <p className="text-slate-500 text-xs">ดีมาก — พักยืดตัวเบาๆ ได้เลย</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPlankTimer(createInitialPlankTimer());
+                        }}
+                        className="w-full py-3 rounded-xl bg-white/10 text-slate-200 border border-white/15 text-sm font-medium"
+                      >
+                        ปิด
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
 
             {/* โน๊ต: บันทึกสิ่งที่จำเป็น (แยกตามบัญชีสมาชิก) */}
