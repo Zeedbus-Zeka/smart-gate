@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image, Navigation, ChevronRight, Save, Timer, Play, Pause, Square } from 'lucide-react';
+import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image, Navigation, ChevronRight, Save, Timer, Play, Pause, Square, Info } from 'lucide-react';
 
 // ==========================================
 // 📍 ตั้งค่าพิกัดบ้าน (Latitude, Longitude)
@@ -53,6 +53,72 @@ const SHOULDER_EXTRA = [
   { id: 's1', nameGym: 'Lateral Raise (4-6 kg/ข้าง)', nameHome: 'ยกขวดน้ำด้านข้าง แขนตรง', sets: 3, reps: '12-15', unit: 'ครั้ง', badge: 'หัวไหล่กว้าง', searchKey: 'Lateral Raise dumbbell', searchKeyHome: 'lateral raise at home bottle' },
   { id: 's2', nameGym: 'Cable/Band Lateral Raise หรือ Reverse Fly', nameHome: 'ยางยืดยกด้านข้าง / ดึงยางด้านหลัง', sets: 2, reps: '15', unit: 'ครั้ง', badge: 'หัวไหล่กว้าง', searchKey: 'Cable Lateral Raise Reverse Fly', searchKeyHome: 'resistance band lateral raise' },
 ];
+
+// ==========================================
+// 🎯 แผนเฉพาะจุด: สัปดาห์ละ 4 วัน (อก · ไหล่ · หลัง · แขน) · 12 สัปดาห์เช่นเดียวกับ Hybrid
+// ==========================================
+const TRAINING_MODE_HYBRID = 'hybrid';
+const TRAINING_MODE_SPLIT = 'split';
+
+const TARGET_SPLIT_DAY_LABELS = ['อก', 'ไหล่', 'หลัง', 'แขน'];
+
+const SPLIT_DAY_CHEST = [
+  { id: 'sp_ch_0', nameGym: 'Warm-up: ปั่นจักรยาน / แกว่งแขน 5–10 นาที', nameHome: 'แกว่งแขน · ดันผนังเบาๆ 5–8 นาที', sets: 1, reps: '-', unit: '', searchKey: 'chest workout warm up gym', searchKeyHome: 'chest activation warm up home' },
+  { id: 'sp_ch_1', nameGym: 'Barbell / Smith Bench Press', nameHome: 'Board Push-up 🔵 (อก) / Push-up มาตรฐาน', sets: 4, reps: '8-12', unit: 'ครั้ง', searchKey: 'bench press form gym', searchKeyHome: 'push up board chest home' },
+  { id: 'sp_ch_2', nameGym: 'Incline Dumbbell Press', nameHome: 'Decline Push-up (เท้าสูง) / ดันกระเป๋าเอียง', sets: 3, reps: '10-12', unit: 'ครั้ง', searchKey: 'incline dumbbell press', searchKeyHome: 'decline push up chest' },
+  { id: 'sp_ch_3', nameGym: 'Cable / Dumbbell Fly', nameHome: 'เปิดอกยางยืด / ขวดน้ำ fly', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'cable chest fly', searchKeyHome: 'resistance band chest fly home' },
+  { id: 'sp_ch_4', nameGym: 'Chest Dip / Assisted Dip', nameHome: 'Dip เก้าอี้ / Push-up แคบ', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'chest dip machine', searchKeyHome: 'chair dips chest home' },
+  { id: 'sp_ch_ab1', nameGym: 'Cable Crunch / Crunch Machine', nameHome: 'Bicycle crunch · ลุกท้อง', sets: 3, reps: '15-20', unit: 'ครั้ง', badge: 'ท้ายวัน · ท้อง', searchKey: 'cable crunch abs', searchKeyHome: 'bicycle crunch abs home' },
+  { id: 'sp_ch_ab2', nameGym: 'Plank ค้าง (แกนกลาง)', nameHome: 'Plank (ค้างท้องแน่น)', sets: 3, reps: '30-45', unit: 'วินาที', inputUnit: 's', badge: 'ท้ายวัน · ท้อง', searchKey: 'plank abs form', searchKeyHome: 'plank hold home' },
+  { id: 'sp_ch_lg1', nameGym: 'Goblet Squat', nameHome: 'สควอตถือดัมเบล / ขวดหน้าอก', sets: 3, reps: '12-15', unit: 'ครั้ง', badge: 'ท้ายวัน · ขา', searchKey: 'goblet squat how to', searchKeyHome: 'goblet squat at home' },
+  { id: 'sp_ch_lg2', nameGym: 'Walking Lunge (ถือดัมเบล)', nameHome: 'ย่อตัวเดินก้าว (ถือขวด)', sets: 3, reps: '10', unit: 'ครั้ง/ข้าง', badge: 'ท้ายวัน · ขา', searchKey: 'dumbbell walking lunge', searchKeyHome: 'walking lunge at home' },
+];
+
+const SPLIT_DAY_SHOULDERS = [
+  { id: 'sp_sh_0', nameGym: 'Warm-up: แกว่งแขน · ยางดึงเบาๆ 5–8 นาที', nameHome: 'หมุนข้อไหล่ · แกว่งแขนด้านข้าง', sets: 1, reps: '-', unit: '', searchKey: 'shoulder warm up gym', searchKeyHome: 'shoulder warm up resistance band' },
+  { id: 'sp_sh_1', nameGym: 'Dumbbell Shoulder Press', nameHome: 'Board Push-up 🔴 (ไหล่) / Pike Push-up', sets: 4, reps: '8-12', unit: 'ครั้ง', searchKey: 'dumbbell shoulder press form', searchKeyHome: 'push up board shoulders pike push up' },
+  { id: 'sp_sh_2', nameGym: 'Lateral Raise', nameHome: 'ยกขวดน้ำด้านข้าง แขนตรง', sets: 4, reps: '12-15', unit: 'ครั้ง', searchKey: 'dumbbell lateral raise', searchKeyHome: 'lateral raise water bottles' },
+  { id: 'sp_sh_3', nameGym: 'Rear Delt Fly / Reverse Pec Deck', nameHome: 'งอตัวดึงยางแยกสะบัก', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'rear delt fly dumbbell', searchKeyHome: 'band rear delt fly home' },
+  { id: 'sp_sh_4', nameGym: 'Face Pull (rope)', nameHome: 'ดึงยางระดับหน้าผาก (แยกสะบัก)', sets: 3, reps: '15-20', unit: 'ครั้ง', searchKey: 'face pull cable', searchKeyHome: 'resistance band face pull' },
+  { id: 'sp_sh_ab1', nameGym: 'Pallof Press (แกนกลาง)', nameHome: 'ดันยางด้านข้างลำตัว (ต้านหมุน)', sets: 3, reps: '12-15', unit: 'ครั้ง/ข้าง', badge: 'ท้ายวัน · ท้อง', searchKey: 'pallof press cable', searchKeyHome: 'pallof press resistance band' },
+  { id: 'sp_sh_ab2', nameGym: 'Side Plank (ด้านละข้าง)', nameHome: 'Side plank ด้านละข้าง', sets: 2, reps: '20-40', unit: 'วินาที', inputUnit: 's', badge: 'ท้ายวัน · ท้อง', searchKey: 'side plank form', searchKeyHome: 'side plank home' },
+  { id: 'sp_sh_lg1', nameGym: 'Leg Press / Hack Squat (เบา–ปานกลาง)', nameHome: 'สควอตพนักพิงผนัง / ลุกนั่งถือขวด', sets: 3, reps: '12-15', unit: 'ครั้ง', badge: 'ท้ายวัน · ขา', searchKey: 'leg press form feet placement', searchKeyHome: 'wall sit squat hold legs' },
+  { id: 'sp_sh_lg2', nameGym: 'Standing Calf Raise', nameHome: 'ยืนยกส้นเท้า (พื้น/ขั้น)', sets: 4, reps: '15-20', unit: 'ครั้ง', badge: 'ท้ายวัน · ขา', searchKey: 'standing calf raise smith', searchKeyHome: 'calf raises stairs home' },
+];
+
+const SPLIT_DAY_BACK = [
+  { id: 'sp_bk_0', nameGym: 'Warm-up: ดึงสายแถบบน · แกว่งหลัง 5–8 นาที', nameHome: 'Cat-cow · Superman เบาๆ', sets: 1, reps: '-', unit: '', searchKey: 'back workout warm up', searchKeyHome: 'back warm up home cat cow' },
+  { id: 'sp_bk_1', nameGym: 'Lat Pulldown', nameHome: 'Board Push-up 🟡 (หลัง) จังหวะบีบสะบัก', sets: 4, reps: '10-12', unit: 'ครั้ง', searchKey: 'lat pulldown form', searchKeyHome: 'push up board back' },
+  { id: 'sp_bk_2', nameGym: 'Seated Cable Row', nameHome: 'ดึงกระเป๋า / แถวท่อนแขนงอเข่า', sets: 4, reps: '10-12', unit: 'ครั้ง', searchKey: 'seated cable row', searchKeyHome: 'bent over row backpack home' },
+  { id: 'sp_bk_3', nameGym: 'One-Arm Dumbbell Row', nameHome: 'ดึงขวดข้างละมือ (ยื่นขา)', sets: 3, reps: '10-12', unit: 'ครั้ง', searchKey: 'one arm dumbbell row', searchKeyHome: 'single arm row home dumbbell' },
+  { id: 'sp_bk_4', nameGym: 'Hyperextension / Back Extension', nameHome: 'Superman hold · สะพานก้น', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'hyperextension back extension', searchKeyHome: 'superman exercise lower back' },
+  { id: 'sp_bk_ab1', nameGym: "Hanging Knee Raise / Captain's Chair", nameHome: 'ยกเข่าแขวน / ยกเข่านอนบนโซฟา', sets: 3, reps: '10-15', unit: 'ครั้ง', badge: 'ท้ายวัน · ท้อง', searchKey: 'hanging knee raise form', searchKeyHome: 'lying knee raise abs home' },
+  { id: 'sp_bk_ab2', nameGym: 'Dead Bug', nameHome: 'Dead bug ท้องแน่น', sets: 3, reps: '10', unit: 'ครั้ง/ข้าง', badge: 'ท้ายวัน · ท้อง', searchKey: 'dead bug exercise', searchKeyHome: 'dead bug abs home' },
+  { id: 'sp_bk_lg1', nameGym: 'Romanian Deadlift (RDL)', nameHome: 'โยนสะโพกถือดัมเบล / ขวด', sets: 3, reps: '10-12', unit: 'ครั้ง', badge: 'ท้ายวัน · ขา', searchKey: 'romanian deadlift form dumbbell', searchKeyHome: 'romanian deadlift dumbbell home' },
+  { id: 'sp_bk_lg2', nameGym: 'Lying Leg Curl', nameHome: 'Glute bridge · ขาสไลด์บนพื้น', sets: 3, reps: '12-15', unit: 'ครั้ง', badge: 'ท้ายวัน · ขา', searchKey: 'lying leg curl machine', searchKeyHome: 'glute bridge hamstring slide home' },
+];
+
+const SPLIT_DAY_ARMS = [
+  { id: 'sp_ar_0', nameGym: 'Warm-up: หมุนข้อศอก · แกว่งแขนเบาๆ', nameHome: 'หมุนข้อมือ · Curl ขวดเปล่า', sets: 1, reps: '-', unit: '', searchKey: 'arm workout warm up', searchKeyHome: 'arm warm up home' },
+  { id: 'sp_ar_1', nameGym: 'Barbell / EZ Curl', nameHome: 'ดัมเบล / ขวดน้ำ Curl ท่ามาตรฐาน', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'barbell bicep curl', searchKeyHome: 'bicep curl dumbbell home' },
+  { id: 'sp_ar_2', nameGym: 'Hammer Curl', nameHome: 'Hammer curl ขวดคู่', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'hammer curl dumbbell', searchKeyHome: 'hammer curl water bottles' },
+  { id: 'sp_ar_3', nameGym: 'Triceps Rope Pushdown', nameHome: 'Board Push-up 🟢 (หลังแขน) ศอกหนีบ', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'triceps rope pushdown', searchKeyHome: 'push up board triceps' },
+  { id: 'sp_ar_4', nameGym: 'Overhead Triceps Extension', nameHome: 'เหยียดศอกหลังศีรษะ (ขวด/ดัมเบล)', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'overhead tricep extension cable', searchKeyHome: 'overhead tricep extension home' },
+  { id: 'sp_ar_ab1', nameGym: 'Russian Twist (ถือแผ่น/ดัมเบล)', nameHome: 'หมุนลำตัวนั่ง (ถือขวด)', sets: 3, reps: '20-30', unit: 'ครั้ง', badge: 'ท้ายวัน · ท้อง', searchKey: 'russian twist weighted', searchKeyHome: 'russian twist abs home' },
+  { id: 'sp_ar_ab2', nameGym: 'Mountain Climber (ช้าๆ ควบคุม)', nameHome: 'Mountain climber ช้า', sets: 3, reps: '20-30', unit: 'ครั้ง', badge: 'ท้ายวัน · ท้อง', searchKey: 'mountain climber slow abs', searchKeyHome: 'mountain climber exercise home' },
+  { id: 'sp_ar_lg1', nameGym: 'Front Squat / Goblet Squat (เบา)', nameHome: 'สควอตถือหน้า · ลึกพอสบาย', sets: 3, reps: '10-12', unit: 'ครั้ง', badge: 'ท้ายวัน · ขา', searchKey: 'front squat form light', searchKeyHome: 'goblet squat deep home' },
+  { id: 'sp_ar_lg2', nameGym: 'Seated Calf Raise', nameHome: 'ยกส้นเท้านั่งถือดัมเบลบนตัก', sets: 4, reps: '15-20', unit: 'ครั้ง', badge: 'ท้ายวัน · ขา', searchKey: 'seated calf raise machine', searchKeyHome: 'seated calf raise dumbbell home' },
+];
+
+const SPLIT_PROGRAM_BY_DAY = [SPLIT_DAY_CHEST, SPLIT_DAY_SHOULDERS, SPLIT_DAY_BACK, SPLIT_DAY_ARMS];
+
+const getSplitProgramForDay = (day) => {
+  if (day < 1 || day > 4) return [];
+  return SPLIT_PROGRAM_BY_DAY[day - 1];
+};
+const getSplitDayExerciseIds = (day) => getSplitProgramForDay(day).map((e) => e.id);
+
+const getSplitDayLabel = (day) => (day >= 1 && day <= 4 ? TARGET_SPLIT_DAY_LABELS[day - 1] : '');
 
 const TRAINING_STORAGE_KEY_PREFIX = 'smartgate_training';
 const getTrainingStorageKey = (userId) => (userId ? `${TRAINING_STORAGE_KEY_PREFIX}_${userId}` : null);
@@ -217,21 +283,35 @@ export default function App() {
   const [isSimulatingNearHome, setIsSimulatingNearHome] = useState(false);
 
   const [activities, setActivities] = useState(HOUSE_ACTIVITIES);
+  const [trainingMode, setTrainingMode] = useState(TRAINING_MODE_HYBRID);
   const [trainingDay, setTrainingDay] = useState(1);
   const [trainingPlace, setTrainingPlace] = useState('gym');
-  const [trainingCompletedIds, setTrainingCompletedIds] = useState({});
-  const [sessionDateByDay, setSessionDateByDay] = useState(() => ({
-    1: todayKey(),
-    2: todayKey(),
-    3: todayKey(),
+  const [trainingCompletedIds, setTrainingCompletedIds] = useState(() => ({
+    hybrid: {},
+    split: {},
   }));
+  const [sessionDateByDay, setSessionDateByDay] = useState(() => {
+    const t = todayKey();
+    return {
+      hybrid: { 1: t, 2: t, 3: t },
+      split: { 1: t, 2: t, 3: t, 4: t },
+    };
+  });
   const [weightHistory, setWeightHistory] = useState({});
   const [trainingWeek, setTrainingWeek] = useState(1);
   const [trainingNotes, setTrainingNotes] = useState('');
   const [sessionRecords, setSessionRecords] = useState([]);
   const [plankTimer, setPlankTimer] = useState(createInitialPlankTimer);
 
-  const currentSessionDate = trainingDay >= 1 && trainingDay <= 3 ? (sessionDateByDay[trainingDay] || todayKey()) : null;
+  const completedIdsCurrent = trainingCompletedIds[trainingMode] || {};
+  const currentSessionDate =
+    trainingMode === TRAINING_MODE_HYBRID
+      ? trainingDay >= 1 && trainingDay <= 3
+        ? sessionDateByDay.hybrid[trainingDay] || todayKey()
+        : null
+      : trainingDay >= 1 && trainingDay <= 4
+        ? sessionDateByDay.split[trainingDay] || todayKey()
+        : null;
 
   useEffect(() => {
     if (!plankTimer.open || !plankTimer.running || plankTimer.paused) return undefined;
@@ -270,18 +350,57 @@ export default function App() {
       const s = localStorage.getItem(key);
       if (s) {
         const data = JSON.parse(s);
+        const today = todayKey();
         if (data.day >= 1 && data.day <= 4) setTrainingDay(data.day);
         if (data.place === 'gym' || data.place === 'home') setTrainingPlace(data.place);
-        if (data.completedIds && typeof data.completedIds === 'object') setTrainingCompletedIds(data.completedIds);
+        if (data.trainingMode === TRAINING_MODE_HYBRID || data.trainingMode === TRAINING_MODE_SPLIT) {
+          setTrainingMode(data.trainingMode);
+        }
+        if (data.completedIds && typeof data.completedIds === 'object') {
+          if (data.completedIds.hybrid !== undefined || data.completedIds.split !== undefined) {
+            setTrainingCompletedIds({
+              hybrid: typeof data.completedIds.hybrid === 'object' ? data.completedIds.hybrid : {},
+              split: typeof data.completedIds.split === 'object' ? data.completedIds.split : {},
+            });
+          } else {
+            const keys = Object.keys(data.completedIds);
+            const hasSplitIds = keys.some((k) => k.startsWith('sp_'));
+            setTrainingCompletedIds(
+              hasSplitIds ? { hybrid: {}, split: data.completedIds } : { hybrid: data.completedIds, split: {} }
+            );
+          }
+        }
         if (data.sessionDateByDay && typeof data.sessionDateByDay === 'object') {
-          const today = todayKey();
-          setSessionDateByDay({
-            1: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay[1]) ? data.sessionDateByDay[1] : today,
-            2: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay[2]) ? data.sessionDateByDay[2] : today,
-            3: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay[3]) ? data.sessionDateByDay[3] : today,
-          });
+          if (data.sessionDateByDay.hybrid && data.sessionDateByDay.split) {
+            setSessionDateByDay({
+              hybrid: {
+                1: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.hybrid[1]) ? data.sessionDateByDay.hybrid[1] : today,
+                2: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.hybrid[2]) ? data.sessionDateByDay.hybrid[2] : today,
+                3: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.hybrid[3]) ? data.sessionDateByDay.hybrid[3] : today,
+              },
+              split: {
+                1: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[1]) ? data.sessionDateByDay.split[1] : today,
+                2: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[2]) ? data.sessionDateByDay.split[2] : today,
+                3: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[3]) ? data.sessionDateByDay.split[3] : today,
+                4: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[4]) ? data.sessionDateByDay.split[4] : today,
+              },
+            });
+          } else {
+            const o = data.sessionDateByDay;
+            setSessionDateByDay({
+              hybrid: {
+                1: /^\d{4}-\d{2}-\d{2}$/.test(o[1]) ? o[1] : today,
+                2: /^\d{4}-\d{2}-\d{2}$/.test(o[2]) ? o[2] : today,
+                3: /^\d{4}-\d{2}-\d{2}$/.test(o[3]) ? o[3] : today,
+              },
+              split: { 1: today, 2: today, 3: today, 4: today },
+            });
+          }
         } else if (data.sessionDate && /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDate)) {
-          setSessionDateByDay({ 1: data.sessionDate, 2: data.sessionDate, 3: data.sessionDate });
+          setSessionDateByDay({
+            hybrid: { 1: data.sessionDate, 2: data.sessionDate, 3: data.sessionDate },
+            split: { 1: today, 2: today, 3: today, 4: today },
+          });
         }
         if (data.weightHistory && typeof data.weightHistory === 'object') setWeightHistory(data.weightHistory);
         if (typeof data.week === 'number' && data.week >= 1 && data.week <= 12) setTrainingWeek(data.week);
@@ -291,10 +410,25 @@ export default function App() {
     } catch (_) {}
   }, [user]);
 
-  const currentProgram = getProgramForWeekDay(trainingWeek, trainingDay);
-  const currentProgramLabel = getPlanForDay(trainingWeek, trainingDay) ? `Program ${getPlanForDay(trainingWeek, trainingDay)}` : '';
-  const currentDayIds = getCurrentDayExerciseIds(trainingWeek, trainingDay);
-  const trainingDoneCount = currentDayIds.filter((id) => trainingCompletedIds[id]).length;
+  const currentProgram =
+    trainingMode === TRAINING_MODE_HYBRID
+      ? getProgramForWeekDay(trainingWeek, trainingDay)
+      : getSplitProgramForDay(trainingDay);
+  const currentProgramLabel =
+    trainingMode === TRAINING_MODE_HYBRID
+      ? getPlanForDay(trainingWeek, trainingDay)
+        ? `Program ${getPlanForDay(trainingWeek, trainingDay)}`
+        : ''
+      : trainingDay >= 1 && trainingDay <= 4
+        ? `เฉพาะจุด · ${getSplitDayLabel(trainingDay)}`
+        : '';
+  const currentDayIds =
+    trainingMode === TRAINING_MODE_HYBRID
+      ? getCurrentDayExerciseIds(trainingWeek, trainingDay)
+      : trainingDay >= 1 && trainingDay <= 4
+        ? getSplitDayExerciseIds(trainingDay)
+        : [];
+  const trainingDoneCount = currentDayIds.filter((id) => completedIdsCurrent[id]).length;
   const trainingTotalCount = currentDayIds.length;
   const trainingAllDone = trainingTotalCount > 0 && trainingDoneCount === trainingTotalCount;
 
@@ -358,6 +492,7 @@ export default function App() {
       localStorage.setItem(
         key,
         JSON.stringify({
+          trainingMode,
           day: trainingDay,
           place: trainingPlace,
           completedIds: trainingCompletedIds,
@@ -369,16 +504,23 @@ export default function App() {
         })
       );
     } catch (_) {}
-  }, [user, trainingDay, trainingPlace, trainingCompletedIds, sessionDateByDay, weightHistory, trainingWeek, trainingNotes, sessionRecords]);
+  }, [user, trainingMode, trainingDay, trainingPlace, trainingCompletedIds, sessionDateByDay, weightHistory, trainingWeek, trainingNotes, sessionRecords]);
 
   const lastSavedForCurrentSession = sessionRecords
-    .filter(
-      (r) =>
-        r.sessionDate === currentSessionDate && r.week === trainingWeek && r.day === trainingDay
-    )
+    .filter((r) => {
+      const modeMatch = r.mode === trainingMode || (!r.mode && trainingMode === TRAINING_MODE_HYBRID);
+      return (
+        modeMatch &&
+        r.sessionDate === currentSessionDate &&
+        r.week === trainingWeek &&
+        r.day === trainingDay
+      );
+    })
     .sort((a, b) => (b.savedAt > a.savedAt ? 1 : -1))[0];
   const saveSessionRecord = () => {
-    if (!currentSessionDate || trainingDay === 4) return;
+    if (!currentSessionDate) return;
+    if (trainingMode === TRAINING_MODE_HYBRID && trainingDay === 4) return;
+    if (trainingMode === TRAINING_MODE_SPLIT && (trainingDay < 1 || trainingDay > 4)) return;
     const weightsToSave = { ...currentSessionWeights };
     currentDayIds.forEach((id) => {
       if (weightsToSave[id] == null) {
@@ -386,13 +528,18 @@ export default function App() {
         if (last != null) weightsToSave[id] = last;
       }
     });
+    const planLabel =
+      trainingMode === TRAINING_MODE_HYBRID
+        ? getPlanForDay(trainingWeek, trainingDay)
+        : `Split · ${getSplitDayLabel(trainingDay)}`;
     setSessionRecords((prev) =>
       prev.concat({
         sessionDate: currentSessionDate,
         savedAt: new Date().toISOString(),
         week: trainingWeek,
         day: trainingDay,
-        plan: getPlanForDay(trainingWeek, trainingDay),
+        mode: trainingMode,
+        plan: planLabel,
         weights: weightsToSave,
       })
     );
@@ -403,15 +550,21 @@ export default function App() {
   };
 
   const toggleTrainingDone = (id) => {
-    setTrainingCompletedIds((prev) => ({ ...prev, [id]: !prev[id] }));
+    setTrainingCompletedIds((prev) => {
+      const modeMap = { ...(prev[trainingMode] || {}) };
+      modeMap[id] = !modeMap[id];
+      return { ...prev, [trainingMode]: modeMap };
+    });
   };
 
   const clearTodayTraining = () => {
     if (!window.confirm('ล้างการติ๊กทั้งหมดของวันนี้?')) return;
     setTrainingCompletedIds((prev) => {
-      const next = { ...prev };
-      currentDayIds.forEach((id) => delete next[id]);
-      return next;
+      const modeMap = { ...(prev[trainingMode] || {}) };
+      currentDayIds.forEach((id) => {
+        delete modeMap[id];
+      });
+      return { ...prev, [trainingMode]: modeMap };
     });
   };
   const toggleActivity = (id) => {
@@ -658,14 +811,51 @@ export default function App() {
 
         {activeTab === 'exercise' && (
           <div className="space-y-4 pb-2">
-            {/* หัวข้อ: แผนสร้างกล้ามเนื้อ 12 สัปดาห์ (3 เดือน) */}
+            {/* หัวข้อ + เลือกโหมด: Hybrid 12 สัปดาห์ / เฉพาะจุด 4 วัน */}
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10">
               <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
                 <Dumbbell className="w-5 h-5 text-cyan-400" />
-                แผนสร้างกล้ามเนื้อ 12 สัปดาห์ (3 เดือน)
+                {trainingMode === TRAINING_MODE_HYBRID
+                  ? 'แผนสร้างกล้ามเนื้อ 12 สัปดาห์ (3 เดือน)'
+                  : 'แผนเฉพาะจุด · สัปดาห์ละ 4 วัน'}
               </h2>
-              <p className="text-cyan-400/90 text-xs font-medium mt-1">รุ่น Hybrid · บัญชี: {user?.name ?? '—'}</p>
-              <p className="text-slate-400 text-sm mt-1">แตะแต่ละท่าเพื่อบันทึก · แผนแยกตามสมาชิก (คนละบัญชี)</p>
+              <p className="text-cyan-400/90 text-xs font-medium mt-1">บัญชี: {user?.name ?? '—'}</p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTrainingMode(TRAINING_MODE_HYBRID);
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+                    trainingMode === TRAINING_MODE_HYBRID
+                      ? 'bg-cyan-500/25 text-cyan-300 border-cyan-400/40'
+                      : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  Hybrid A/B
+                  <span className="block font-normal opacity-80 mt-0.5">3 วัน + พัก</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTrainingMode(TRAINING_MODE_SPLIT);
+                    setTrainingDay((d) => (d === 4 ? 1 : d));
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+                    trainingMode === TRAINING_MODE_SPLIT
+                      ? 'bg-violet-500/25 text-violet-300 border-violet-400/40'
+                      : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  เฉพาะจุด
+                  <span className="block font-normal opacity-80 mt-0.5">อก · ไหล่ · หลัง · แขน</span>
+                </button>
+              </div>
+              <p className="text-slate-400 text-sm mt-3">
+                {trainingMode === TRAINING_MODE_HYBRID
+                  ? 'แผนเดิม Program A/B · แตะแต่ละท่าเพื่อบันทึก'
+                  : 'เน้นทีละส่วน 4 วันต่อสัปดาห์ · YouTube + น้ำหนักเหมือนเดิม'}
+              </p>
             </div>
 
             {/* ช่วงสัปดาห์: แสดงทีละ 3 สัปดาห์ */}
@@ -709,7 +899,16 @@ export default function App() {
                 })}
               </div>
               <p className="text-slate-500 text-xs px-1">
-                กำลังดู: สัปดาห์ที่ {trainingWeek} · วัน 1 ({getPlanForDay(trainingWeek, 1)}) / 2 ({getPlanForDay(trainingWeek, 2)}) / 3 ({getPlanForDay(trainingWeek, 3)}) / พัก
+                {trainingMode === TRAINING_MODE_HYBRID ? (
+                  <>
+                    กำลังดู: สัปดาห์ที่ {trainingWeek} · วัน 1 ({getPlanForDay(trainingWeek, 1)}) / 2 ({getPlanForDay(trainingWeek, 2)}) / 3 (
+                    {getPlanForDay(trainingWeek, 3)}) / พัก
+                  </>
+                ) : (
+                  <>
+                    กำลังดู: สัปดาห์ที่ {trainingWeek} · วัน 1 อก / วัน 2 ไหล่ / วัน 3 หลัง / วัน 4 แขน
+                  </>
+                )}
               </p>
               {trainingWeek < 12 && (
                 <button
@@ -723,35 +922,86 @@ export default function App() {
               )}
             </div>
 
-            {/* Day selector: 1 2 3 4(พัก) — แผน A/B ตามสัปดาห์คี่/คู่ */}
-            <div className="flex gap-2">
-              {[1, 2, 3].map((d) => (
+            {/* คำแนะนำการจัดตาราง & ขา/ท้อง — เฉพาะโหมดเฉพาะจุด */}
+            {trainingMode === TRAINING_MODE_SPLIT && (
+              <div className="rounded-2xl border border-violet-400/25 bg-violet-500/10 backdrop-blur-xl p-4 space-y-3">
+                <div className="flex items-start gap-2">
+                  <Info className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-violet-200">การจัดวัน & พัก</p>
+                    <ul className="mt-2 space-y-2 text-slate-300 text-xs leading-relaxed list-disc list-inside marker:text-violet-400/80">
+                      <li>
+                        <strong className="text-slate-200 font-medium">กระจาย 4 วันในปฏิทิน</strong> ให้มีวันว่างระหว่างวันฝึกบ้าง (เช่น จันทร์–พุธว่าง แล้วพฤ–อาทิตย์ฝึก) เพื่อให้ส่วนบนฟื้นตัว
+                      </li>
+                      <li>
+                        <strong className="text-slate-200 font-medium">หลังครบรอบ 4 วัน</strong> แนะนำพักเต็ม <strong className="text-violet-300">1–2 วัน</strong> ก่อนเริ่มรอบใหม่ หรือถ้าฝึกทับถี่ให้ดูตามความเหนื่อยของร่างกาย
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-violet-400/20">
+                  <p className="text-xs font-semibold text-slate-200 mb-1.5 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400/90" />
+                    ขาและกล้ามท้อง
+                  </p>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    ท่า<strong className="text-slate-300">กล้ามท้อง</strong>และ<strong className="text-slate-300">ขา</strong>ใส่ในตารางแล้ว (ป้าย «ท้ายวัน») — ทำหลังจบท่าหลักของวันนั้น โดยไม่แทรกระหว่างเซตหลัก
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* เลือกวัน: Hybrid = 1–3 + พัก · Split = 1–4 (อก ไหล่ หลัง แขน) */}
+            {trainingMode === TRAINING_MODE_HYBRID ? (
+              <div className="flex gap-2">
+                {[1, 2, 3].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setTrainingDay(d)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      trainingDay === d
+                        ? 'bg-cyan-500/25 text-cyan-400 border border-cyan-400/40'
+                        : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    วัน {d}
+                    <span className="block text-xs opacity-80">{getPlanForDay(trainingWeek, d) ?? '-'}</span>
+                  </button>
+                ))}
                 <button
-                  key={d}
-                  onClick={() => setTrainingDay(d)}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                    trainingDay === d
-                      ? 'bg-cyan-500/25 text-cyan-400 border border-cyan-400/40'
-                      : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
+                  type="button"
+                  onClick={() => setTrainingDay(4)}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex flex-col items-center justify-center ${
+                    trainingDay === 4 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/40' : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
                   }`}
                 >
-                  วัน {d}
-                  <span className="block text-xs opacity-80">{getPlanForDay(trainingWeek, d) ?? '-'}</span>
+                  <Coffee className="w-4 h-4" />
+                  <span>พัก</span>
                 </button>
-              ))}
-              <button
-                onClick={() => setTrainingDay(4)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all flex flex-col items-center justify-center ${
-                  trainingDay === 4 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/40' : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
-                }`}
-              >
-                <Coffee className="w-4 h-4" />
-                <span>พัก</span>
-              </button>
-            </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {[1, 2, 3, 4].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setTrainingDay(d)}
+                    className={`py-3 rounded-xl text-sm font-medium transition-all border ${
+                      trainingDay === d
+                        ? 'bg-violet-500/25 text-violet-300 border-violet-400/45'
+                        : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    วัน {d}
+                    <span className="block text-xs opacity-90 mt-0.5">{TARGET_SPLIT_DAY_LABELS[d - 1]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
-            {/* วันพักผ่อน (Rest Day) */}
-            {trainingDay === 4 && (
+            {/* วันพักผ่อน (Rest Day) — เฉพาะโหมด Hybrid */}
+            {trainingMode === TRAINING_MODE_HYBRID && trainingDay === 4 && (
               <div className="bg-emerald-500/10 backdrop-blur-xl rounded-2xl p-6 border border-emerald-400/20 text-center">
                 <Coffee className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
                 <h3 className="text-lg font-bold text-slate-100">วันพักผ่อน (Rest Day)</h3>
@@ -761,17 +1011,32 @@ export default function App() {
               </div>
             )}
 
-            {/* Gym / Home + Progress (เมื่อไม่ใช่วันพัก) */}
-            {trainingDay !== 4 && (
+            {/* Gym / Home + Progress */}
+            {((trainingMode === TRAINING_MODE_HYBRID && trainingDay !== 4) ||
+              (trainingMode === TRAINING_MODE_SPLIT && trainingDay >= 1 && trainingDay <= 4)) && (
               <>
-                {/* วันที่ฟิตเนต (บันทึกแยกตามวัน 1 / 2 / 3) */}
+                {/* วันที่ฝึก (แยกตามโหมด + วัน) */}
                 <div className="flex items-center gap-2 p-3 bg-white/5 rounded-xl border border-white/10">
                   <Calendar className="w-5 h-5 text-cyan-400 shrink-0" />
-                  <label className="text-slate-300 text-sm font-medium shrink-0">วันที่ฝึก (วันที่ {trainingDay}):</label>
+                  <label className="text-slate-300 text-sm font-medium shrink-0">
+                    วันที่ฝึก
+                    {trainingMode === TRAINING_MODE_SPLIT && (
+                      <span className="text-violet-400/90"> ({getSplitDayLabel(trainingDay)})</span>
+                    )}
+                    :
+                  </label>
                   <input
                     type="date"
                     value={currentSessionDate ?? ''}
-                    onChange={(e) => setSessionDateByDay((prev) => ({ ...prev, [trainingDay]: e.target.value }))}
+                    onChange={(e) =>
+                      setSessionDateByDay((prev) => ({
+                        ...prev,
+                        [trainingMode]: {
+                          ...(prev[trainingMode] || {}),
+                          [trainingDay]: e.target.value,
+                        },
+                      }))
+                    }
                     className="flex-1 min-w-0 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/30 focus:outline-none"
                   />
                 </div>
@@ -831,9 +1096,9 @@ export default function App() {
 
                 {currentProgram.map((ex) => {
               const name = trainingPlace === 'gym' ? ex.nameGym : ex.nameHome;
-              const done = trainingCompletedIds[ex.id];
+              const done = completedIdsCurrent[ex.id];
               const repDisplay = ex.unit ? `${ex.reps} ${ex.unit}` : ex.reps;
-              const isWarmup = ex.id === 'a0' || ex.id === 'b0';
+              const isWarmup = ex.reps === '-' || ex.id === 'a0' || ex.id === 'b0';
               const inputUnit = ex.inputUnit || 'kg';
               const currentWeight = currentSessionWeights[ex.id];
               const lastWeight = getLastWeightForExercise(ex.id);
@@ -858,6 +1123,11 @@ export default function App() {
                       <p className={`font-medium text-sm ${done ? 'text-slate-500 line-through' : 'text-slate-100'}`}>{name}</p>
                       <p className="text-slate-400 text-xs mt-0.5">
                         {ex.sets} เซต {repDisplay !== '-' ? `· ${repDisplay}` : ''}
+                        {ex.badge && (
+                          <span className={`ml-2 text-xs ${trainingMode === TRAINING_MODE_SPLIT ? 'text-violet-400/90' : 'text-amber-400/80'}`}>
+                            · {ex.badge}
+                          </span>
+                        )}
                       </p>
                       {!isWarmup && (() => {
                         const suggestion = getWeightSuggestion(ex.id, inputUnit);
@@ -907,7 +1177,8 @@ export default function App() {
                     >
                       <Image className="w-5 h-5" />
                     </button>
-                    {ex.id === PLANK_EXERCISE_ID && (
+                    {(ex.id === PLANK_EXERCISE_ID ||
+                      (trainingMode === TRAINING_MODE_SPLIT && ex.inputUnit === 's')) && (
                       <button
                         type="button"
                         onClick={(e) => {
@@ -953,7 +1224,8 @@ export default function App() {
               );
             })}
 
-                {/* โฟกัสหัวไหล่กว้าง (พิเศษ) */}
+                {/* โฟกัสหัวไหล่กว้าง (พิเศษ) — เฉพาะโหมด Hybrid */}
+                {trainingMode === TRAINING_MODE_HYBRID && (
                 <div className="pt-2 border-t border-white/10">
                   <p className="text-amber-400/90 text-sm font-semibold flex items-center gap-2 mb-3 px-1">
                     <Sparkles className="w-4 h-4" />
@@ -961,7 +1233,7 @@ export default function App() {
                   </p>
                   {SHOULDER_EXTRA.map((ex) => {
                     const name = trainingPlace === 'gym' ? ex.nameGym : ex.nameHome;
-                    const done = trainingCompletedIds[ex.id];
+                    const done = completedIdsCurrent[ex.id];
                     const inputUnit = ex.inputUnit || 'kg';
                     const currentWeight = currentSessionWeights[ex.id];
                     const lastWeight = getLastWeightForExercise(ex.id);
@@ -1057,6 +1329,7 @@ export default function App() {
                     );
                   })}
                 </div>
+                )}
 
                 {/* เมื่อทำครบทั้งวัน: ปุ่มบันทึก น้ำหนัก + วันเวลา */}
                 {trainingAllDone && (
@@ -1075,7 +1348,10 @@ export default function App() {
                       บันทึก น้ำหนักที่ทำได้ + วันเวลาที่บันทึก
                     </button>
                     <p className="text-slate-500 text-[10px] text-center">
-                      เก็บไว้เป็นข้อมูลอ้างอิง (สัปดาห์ที่ {trainingWeek} · วันที่ {trainingDay} · Plan {getPlanForDay(trainingWeek, trainingDay)})
+                      เก็บไว้เป็นข้อมูลอ้างอิง (สัปดาห์ที่ {trainingWeek} · วันที่ {trainingDay} ·{' '}
+                      {trainingMode === TRAINING_MODE_HYBRID
+                        ? `Plan ${getPlanForDay(trainingWeek, trainingDay)}`
+                        : `เฉพาะจุด · ${getSplitDayLabel(trainingDay)}`}
                     </p>
                   </div>
                 )}
