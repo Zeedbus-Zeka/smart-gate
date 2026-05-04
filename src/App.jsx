@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image, Navigation, ChevronRight, Save, Timer, Play, Pause, Square, Info } from 'lucide-react';
+import SplitPoseThumb from './SplitPoseThumb';
 
 // ==========================================
 // 📍 ตั้งค่าพิกัดบ้าน (Latitude, Longitude)
@@ -1112,12 +1113,15 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => toggleTrainingDone(ex.id)}
-                    className="flex items-center gap-3 flex-1 min-w-0 text-left active:scale-[0.99]"
+                    className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 text-left active:scale-[0.99]"
                   >
                     {done ? (
                       <Check className="w-6 h-6 text-emerald-400 shrink-0 rounded-full bg-emerald-400/20 p-1" />
                     ) : (
                       <Circle className="w-6 h-6 text-slate-500 shrink-0" />
+                    )}
+                    {trainingMode === TRAINING_MODE_SPLIT && /^sp_/.test(ex.id) && (
+                      <SplitPoseThumb exerciseId={ex.id} />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className={`font-medium text-sm ${done ? 'text-slate-500 line-through' : 'text-slate-100'}`}>{name}</p>
