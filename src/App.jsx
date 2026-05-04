@@ -428,8 +428,14 @@ export default function App() {
       : trainingDay >= 1 && trainingDay <= 4
         ? getSplitDayExerciseIds(trainingDay)
         : [];
-  const trainingDoneCount = currentDayIds.filter((id) => completedIdsCurrent[id]).length;
-  const trainingTotalCount = currentDayIds.length;
+  /** นับความครบเพื่อปุ่มบันทึก: ไม่รวม warm-up (reps '-') ท่าหลัก + ท่าเสริมที่ไม่อยู่ใน currentProgram ยังนับตามปกติ */
+  const completionDayIds = currentDayIds.filter((id) => {
+    const ex = currentProgram.find((e) => e.id === id);
+    if (!ex) return true;
+    return ex.reps !== '-';
+  });
+  const trainingDoneCount = completionDayIds.filter((id) => completedIdsCurrent[id]).length;
+  const trainingTotalCount = completionDayIds.length;
   const trainingAllDone = trainingTotalCount > 0 && trainingDoneCount === trainingTotalCount;
 
   const currentSessionWeights = currentSessionDate ? weightHistory[currentSessionDate] || {} : {};
