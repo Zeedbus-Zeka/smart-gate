@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image, Navigation, ChevronRight, Save, Timer, Play, Pause, Square, Info } from 'lucide-react';
 import SplitPoseThumb from './SplitPoseThumb';
+import { supabase } from './supabaseClient';
 
 // ==========================================
 // 📍 ตั้งค่าพิกัดบ้าน (Latitude, Longitude)
@@ -123,6 +124,78 @@ const getSplitDayLabel = (day) => (day >= 1 && day <= 4 ? TARGET_SPLIT_DAY_LABEL
 
 const TRAINING_STORAGE_KEY_PREFIX = 'smartgate_training';
 const getTrainingStorageKey = (userId) => (userId ? `${TRAINING_STORAGE_KEY_PREFIX}_${userId}` : null);
+
+/** โหลด payload เดียวกับที่ serialize ลง localStorage / คอลัมน์ data ใน Supabase */
+function applyTrainingStoragePayload(data, setters) {
+  if (!data || typeof data !== 'object') return;
+  const {
+    setTrainingDay,
+    setTrainingMode,
+    setTrainingPlace,
+    setTrainingCompletedIds,
+    setSessionDateByDay,
+    setWeightHistory,
+    setTrainingWeek,
+    setTrainingNotes,
+    setSessionRecords,
+  } = setters;
+  const today = todayKey();
+  if (data.day >= 1 && data.day <= 4) setTrainingDay(data.day);
+  if (data.place === 'gym' || data.place === 'home') setTrainingPlace(data.place);
+  if (data.trainingMode === TRAINING_MODE_HYBRID || data.trainingMode === TRAINING_MODE_SPLIT) {
+    setTrainingMode(data.trainingMode);
+  }
+  if (data.completedIds && typeof data.completedIds === 'object') {
+    if (data.completedIds.hybrid !== undefined || data.completedIds.split !== undefined) {
+      setTrainingCompletedIds({
+        hybrid: typeof data.completedIds.hybrid === 'object' ? data.completedIds.hybrid : {},
+        split: typeof data.completedIds.split === 'object' ? data.completedIds.split : {},
+      });
+    } else {
+      const keys = Object.keys(data.completedIds);
+      const hasSplitIds = keys.some((k) => k.startsWith('sp_'));
+      setTrainingCompletedIds(
+        hasSplitIds ? { hybrid: {}, split: data.completedIds } : { hybrid: data.completedIds, split: {} }
+      );
+    }
+  }
+  if (data.sessionDateByDay && typeof data.sessionDateByDay === 'object') {
+    if (data.sessionDateByDay.hybrid && data.sessionDateByDay.split) {
+      setSessionDateByDay({
+        hybrid: {
+          1: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.hybrid[1]) ? data.sessionDateByDay.hybrid[1] : today,
+          2: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.hybrid[2]) ? data.sessionDateByDay.hybrid[2] : today,
+          3: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.hybrid[3]) ? data.sessionDateByDay.hybrid[3] : today,
+        },
+        split: {
+          1: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[1]) ? data.sessionDateByDay.split[1] : today,
+          2: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[2]) ? data.sessionDateByDay.split[2] : today,
+          3: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[3]) ? data.sessionDateByDay.split[3] : today,
+          4: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[4]) ? data.sessionDateByDay.split[4] : today,
+        },
+      });
+    } else {
+      const o = data.sessionDateByDay;
+      setSessionDateByDay({
+        hybrid: {
+          1: /^\d{4}-\d{2}-\d{2}$/.test(o[1]) ? o[1] : today,
+          2: /^\d{4}-\d{2}-\d{2}$/.test(o[2]) ? o[2] : today,
+          3: /^\d{4}-\d{2}-\d{2}$/.test(o[3]) ? o[3] : today,
+        },
+        split: { 1: today, 2: today, 3: today, 4: today },
+      });
+    }
+  } else if (data.sessionDate && /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDate)) {
+    setSessionDateByDay({
+      hybrid: { 1: data.sessionDate, 2: data.sessionDate, 3: data.sessionDate },
+      split: { 1: today, 2: today, 3: today, 4: today },
+    });
+  }
+  if (data.weightHistory && typeof data.weightHistory === 'object') setWeightHistory(data.weightHistory);
+  if (typeof data.week === 'number' && data.week >= 1 && data.week <= 12) setTrainingWeek(data.week);
+  if (typeof data.notes === 'string') setTrainingNotes(data.notes);
+  if (Array.isArray(data.sessionRecords)) setSessionRecords(data.sessionRecords);
+}
 
 /** สัปดาห์คี่ (1,3,5...): วัน1=A, วัน2=B, วัน3=A. สัปดาห์คู่ (2,4,6...): วัน1=B, วัน2=A, วัน3=B */
 const getPlanForDay = (week, day) => {
@@ -303,6 +376,10 @@ export default function App() {
   const [trainingNotes, setTrainingNotes] = useState('');
   const [sessionRecords, setSessionRecords] = useState([]);
   const [plankTimer, setPlankTimer] = useState(createInitialPlankTimer);
+  const [trainingCloudHydrated, setTrainingCloudHydrated] = useState(false);
+  const [cloudSyncMessage, setCloudSyncMessage] = useState(null);
+  const cloudBannerClearRef = useRef(null);
+  const cloudUpsertTimerRef = useRef(null);
 
   const completedIdsCurrent = trainingCompletedIds[trainingMode] || {};
   const currentSessionDate =
@@ -345,70 +422,63 @@ export default function App() {
   }, [plankTimer.open, plankTimer.running, plankTimer.paused]);
 
   useEffect(() => {
-    const key = user ? getTrainingStorageKey(user.id) : null;
-    if (!key) return;
-    try {
-      const s = localStorage.getItem(key);
-      if (s) {
-        const data = JSON.parse(s);
-        const today = todayKey();
-        if (data.day >= 1 && data.day <= 4) setTrainingDay(data.day);
-        if (data.place === 'gym' || data.place === 'home') setTrainingPlace(data.place);
-        if (data.trainingMode === TRAINING_MODE_HYBRID || data.trainingMode === TRAINING_MODE_SPLIT) {
-          setTrainingMode(data.trainingMode);
+    if (!user) {
+      setTrainingCloudHydrated(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setTrainingCloudHydrated(false);
+    const key = getTrainingStorageKey(user.id);
+    const setters = {
+      setTrainingDay,
+      setTrainingMode,
+      setTrainingPlace,
+      setTrainingCompletedIds,
+      setSessionDateByDay,
+      setWeightHistory,
+      setTrainingWeek,
+      setTrainingNotes,
+      setSessionRecords,
+    };
+
+    const finishHydrate = (payloadFromCloud) => {
+      if (cancelled) return;
+      try {
+        if (payloadFromCloud) {
+          localStorage.setItem(key, JSON.stringify(payloadFromCloud));
         }
-        if (data.completedIds && typeof data.completedIds === 'object') {
-          if (data.completedIds.hybrid !== undefined || data.completedIds.split !== undefined) {
-            setTrainingCompletedIds({
-              hybrid: typeof data.completedIds.hybrid === 'object' ? data.completedIds.hybrid : {},
-              split: typeof data.completedIds.split === 'object' ? data.completedIds.split : {},
-            });
-          } else {
-            const keys = Object.keys(data.completedIds);
-            const hasSplitIds = keys.some((k) => k.startsWith('sp_'));
-            setTrainingCompletedIds(
-              hasSplitIds ? { hybrid: {}, split: data.completedIds } : { hybrid: data.completedIds, split: {} }
-            );
-          }
+      } catch (_) {}
+      setTrainingCloudHydrated(true);
+    };
+
+    (async () => {
+      try {
+        const { data: row, error } = await supabase
+          .from('training_data')
+          .select('data')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        if (!error && row?.data != null && typeof row.data === 'object') {
+          applyTrainingStoragePayload(row.data, setters);
+          finishHydrate(row.data);
+          return;
         }
-        if (data.sessionDateByDay && typeof data.sessionDateByDay === 'object') {
-          if (data.sessionDateByDay.hybrid && data.sessionDateByDay.split) {
-            setSessionDateByDay({
-              hybrid: {
-                1: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.hybrid[1]) ? data.sessionDateByDay.hybrid[1] : today,
-                2: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.hybrid[2]) ? data.sessionDateByDay.hybrid[2] : today,
-                3: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.hybrid[3]) ? data.sessionDateByDay.hybrid[3] : today,
-              },
-              split: {
-                1: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[1]) ? data.sessionDateByDay.split[1] : today,
-                2: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[2]) ? data.sessionDateByDay.split[2] : today,
-                3: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[3]) ? data.sessionDateByDay.split[3] : today,
-                4: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[4]) ? data.sessionDateByDay.split[4] : today,
-              },
-            });
-          } else {
-            const o = data.sessionDateByDay;
-            setSessionDateByDay({
-              hybrid: {
-                1: /^\d{4}-\d{2}-\d{2}$/.test(o[1]) ? o[1] : today,
-                2: /^\d{4}-\d{2}-\d{2}$/.test(o[2]) ? o[2] : today,
-                3: /^\d{4}-\d{2}-\d{2}$/.test(o[3]) ? o[3] : today,
-              },
-              split: { 1: today, 2: today, 3: today, 4: today },
-            });
-          }
-        } else if (data.sessionDate && /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDate)) {
-          setSessionDateByDay({
-            hybrid: { 1: data.sessionDate, 2: data.sessionDate, 3: data.sessionDate },
-            split: { 1: today, 2: today, 3: today, 4: today },
-          });
+      } catch (_) {}
+      if (cancelled) return;
+      try {
+        const s = localStorage.getItem(key);
+        if (s) {
+          const data = JSON.parse(s);
+          applyTrainingStoragePayload(data, setters);
         }
-        if (data.weightHistory && typeof data.weightHistory === 'object') setWeightHistory(data.weightHistory);
-        if (typeof data.week === 'number' && data.week >= 1 && data.week <= 12) setTrainingWeek(data.week);
-        if (typeof data.notes === 'string') setTrainingNotes(data.notes);
-        if (Array.isArray(data.sessionRecords)) setSessionRecords(data.sessionRecords);
-      }
-    } catch (_) {}
+      } catch (_) {}
+      finishHydrate();
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const currentProgram =
@@ -493,25 +563,73 @@ export default function App() {
   };
 
   useEffect(() => {
-    const key = user ? getTrainingStorageKey(user.id) : null;
-    if (!key) return;
+    if (!user || !trainingCloudHydrated) return undefined;
+    const key = getTrainingStorageKey(user.id);
+    const payload = {
+      trainingMode,
+      day: trainingDay,
+      place: trainingPlace,
+      completedIds: trainingCompletedIds,
+      sessionDateByDay,
+      weightHistory,
+      week: trainingWeek,
+      notes: trainingNotes,
+      sessionRecords,
+    };
     try {
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          trainingMode,
-          day: trainingDay,
-          place: trainingPlace,
-          completedIds: trainingCompletedIds,
-          sessionDateByDay,
-          weightHistory,
-          week: trainingWeek,
-          notes: trainingNotes,
-          sessionRecords,
-        })
-      );
+      localStorage.setItem(key, JSON.stringify(payload));
     } catch (_) {}
-  }, [user, trainingMode, trainingDay, trainingPlace, trainingCompletedIds, sessionDateByDay, weightHistory, trainingWeek, trainingNotes, sessionRecords]);
+
+    let cancelled = false;
+    if (cloudUpsertTimerRef.current) {
+      clearTimeout(cloudUpsertTimerRef.current);
+      cloudUpsertTimerRef.current = null;
+    }
+    cloudUpsertTimerRef.current = window.setTimeout(async () => {
+      cloudUpsertTimerRef.current = null;
+      if (cancelled) return;
+      const { error } = await supabase
+        .from('training_data')
+        .upsert({ user_id: user.id, data: payload }, { onConflict: 'user_id' });
+      if (cancelled) return;
+      if (cloudBannerClearRef.current) {
+        clearTimeout(cloudBannerClearRef.current);
+        cloudBannerClearRef.current = null;
+      }
+      if (error) {
+        setCloudSyncMessage({
+          type: 'error',
+          text: error.message || 'บันทึกขึ้นคลาวด์ไม่สำเร็จ กรุณาลองใหม่',
+        });
+      } else {
+        setCloudSyncMessage({ type: 'success', text: 'บันทึกข้อมูลขึ้นคลาวด์สำเร็จ' });
+      }
+      cloudBannerClearRef.current = window.setTimeout(() => {
+        setCloudSyncMessage(null);
+        cloudBannerClearRef.current = null;
+      }, 4000);
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      if (cloudUpsertTimerRef.current) {
+        clearTimeout(cloudUpsertTimerRef.current);
+        cloudUpsertTimerRef.current = null;
+      }
+    };
+  }, [
+    user,
+    trainingCloudHydrated,
+    trainingMode,
+    trainingDay,
+    trainingPlace,
+    trainingCompletedIds,
+    sessionDateByDay,
+    weightHistory,
+    trainingWeek,
+    trainingNotes,
+    sessionRecords,
+  ]);
 
   const lastSavedForCurrentSession = sessionRecords
     .filter((r) => {
@@ -1588,6 +1706,23 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {cloudSyncMessage && (
+        <div
+          className="fixed bottom-24 left-0 right-0 z-[70] flex justify-center px-4 pointer-events-none max-w-md mx-auto"
+          role="status"
+        >
+          <div
+            className={`pointer-events-auto w-full rounded-xl px-4 py-3 text-sm font-medium shadow-lg border ${
+              cloudSyncMessage.type === 'success'
+                ? 'bg-emerald-950/95 text-emerald-100 border-emerald-500/35'
+                : 'bg-red-950/95 text-red-100 border-red-500/35'
+            }`}
+          >
+            {cloudSyncMessage.text}
+          </div>
+        </div>
+      )}
 
       {/* Bottom Navigation Bar - Glassmorphism */}
       <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pb-6 pt-2 bg-slate-900/80 backdrop-blur-xl border-t border-white/10" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
