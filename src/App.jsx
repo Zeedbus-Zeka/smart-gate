@@ -452,19 +452,21 @@ export default function App() {
     };
 
     (async () => {
-      try {
-        const { data: row, error } = await supabase
-          .from('training_data')
-          .select('data')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        if (cancelled) return;
-        if (!error && row?.data != null && typeof row.data === 'object') {
-          applyTrainingStoragePayload(row.data, setters);
-          finishHydrate(row.data);
-          return;
-        }
-      } catch (_) {}
+      if (supabase) {
+        try {
+          const { data: row, error } = await supabase
+            .from('training_data')
+            .select('data')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (cancelled) return;
+          if (!error && row?.data != null && typeof row.data === 'object') {
+            applyTrainingStoragePayload(row.data, setters);
+            finishHydrate(row.data);
+            return;
+          }
+        } catch (_) {}
+      }
       if (cancelled) return;
       try {
         const s = localStorage.getItem(key);
@@ -579,6 +581,10 @@ export default function App() {
     try {
       localStorage.setItem(key, JSON.stringify(payload));
     } catch (_) {}
+
+    if (!supabase) {
+      return undefined;
+    }
 
     let cancelled = false;
     if (cloudUpsertTimerRef.current) {
