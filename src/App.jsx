@@ -518,32 +518,46 @@ export default function App() {
     if (dates.length === 0) return null;
     return weightHistory[dates[dates.length - 1]][exerciseId];
   };
-  /** ประวัติน้ำหนักท่านี้ (ทุกวันที่บันทึก) เรียงจากใหม่ไปเก่า สูงสุด 6 ครั้ง */
-  const getWeightHistoryForExercise = (exerciseId) => {
-    const entries = Object.entries(weightHistory)
+  /** ประวัติท่านี้ทุกวันที่มีค่า เรียงใหม่ → เก่า (ใช้คำนวณคำแนะนำ) */
+  const getWeightHistoryEntries = (exerciseId) =>
+    Object.entries(weightHistory)
       .filter(([, session]) => session[exerciseId] != null)
       .map(([date, session]) => ({ date, weight: session[exerciseId] }))
-      .sort((a, b) => (a.date > b.date ? -1 : 1))
-      .slice(0, 6);
-    return entries;
-  };
-  /** คำแนะนำสำหรับครั้งนี้: น้ำหนัก/เวลาล่าสุด แนวโน้ม และข้อความแนะนำ (unit = 'kg' หรือ 's') */
+      .sort((a, b) => (a.date > b.date ? -1 : 1));
+
+  /** แสดงในหน้าจอ: สูงสุด 2 ครั้งล่าสุด */
+  const getWeightHistoryForExercise = (exerciseId) => getWeightHistoryEntries(exerciseId).slice(0, 2);
+
+  /** คำแนะนำจากสถิติก่อนวันที่ฝึกปัจจุบัน (อิงหลายครั้งภายในประวัติ) */
   const getWeightSuggestion = (exerciseId, unit = 'kg') => {
-    const history = getWeightHistoryForExercise(exerciseId);
-    const beforeToday = currentSessionDate ? history.filter((h) => h.date < currentSessionDate) : [];
+    const all = getWeightHistoryEntries(exerciseId);
+    const beforeToday = currentSessionDate ? all.filter((h) => h.date < currentSessionDate) : [];
     const last = beforeToday[0];
     const prev = beforeToday[1];
-    if (!last) return { lastWeight: null, trend: null, suggestText: null };
+    if (!last) return { lastWeight: null, trend: null, compareNote: null, adviceLine: null };
     const lastWeight = last.weight;
-    const step = unit === 's' ? '5 s' : '2.5 kg';
-    if (!prev) return { lastWeight, trend: null, suggestText: `ใช้ ${lastWeight} ${unit} เท่าเดิม หรือลองเพิ่ม ${step}` };
+    const step = unit === 's' ? '5 วินาที' : '2.5 กก.';
+    const unitLabel = unit === 's' ? 'วินาที' : unit === 'kg' ? 'กก.' : unit;
+    if (!prev) {
+      return {
+        lastWeight,
+        trend: null,
+        compareNote: null,
+        adviceLine: `ลองใช้ ${lastWeight} ${unitLabel} เหมือนครั้งล่าสุด หรือเพิ่มเล็กน้อย (${step}) ถ้ารู้สึกเบาและฟอร์มยังคุมได้`,
+      };
+    }
     const prevWeight = prev.weight;
     const trend = lastWeight > prevWeight ? 'up' : lastWeight < prevWeight ? 'down' : 'same';
-    const trendText = trend === 'up' ? 'แนวโน้มเพิ่ม' : trend === 'down' ? 'ลดลง' : 'เท่าเดิม';
-    const suggestText = trend === 'same'
-      ? `ใช้ ${lastWeight} ${unit} เท่าเดิม หรือลองเพิ่ม ${step}`
-      : `ใช้ ${lastWeight} ${unit} (${trendText})`;
-    return { lastWeight, prevWeight, trend, suggestText };
+    const compareNote = `เทียบ 2 ครั้งก่อนหน้า: ${prevWeight} → ${lastWeight} ${unitLabel}`;
+    let adviceLine;
+    if (trend === 'up') {
+      adviceLine = `แนวโน้มขึ้น — รักษา ${lastWeight} ${unitLabel} หรือเพิ่ม ${step} เมื่อฟอร์มนิ่งแล้ว`;
+    } else if (trend === 'down') {
+      adviceLine = `แนวโน้มลง — พักฟื้นหรือลดความหนักก่อน แล้วค่อยกลับมาที่ ${lastWeight} ${unitLabel} เมื่อพร้อม`;
+    } else {
+      adviceLine = `นิ่งที่ ${lastWeight} ${unitLabel} — ถ้าไม่เหนื่อยเกินไป ลองเพิ่ม ${step}`;
+    }
+    return { lastWeight, prevWeight, trend, compareNote, adviceLine };
   };
   const setExerciseWeight = (exerciseId, value) => {
     if (!currentSessionDate) return;
@@ -1238,27 +1252,31 @@ export default function App() {
               return (
                 <div
                   key={ex.id}
-                  className="w-full flex items-center gap-2 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-cyan-400/20 transition-all"
+                  className="w-full flex flex-col gap-3 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 hover:border-cyan-400/20 transition-all min-w-0"
                 >
                   <button
                     type="button"
                     onClick={() => toggleTrainingDone(ex.id)}
-                    className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 text-left active:scale-[0.99]"
+                    className="flex w-full min-w-0 items-start gap-3 text-left active:scale-[0.99]"
                   >
                     {done ? (
-                      <Check className="w-6 h-6 text-emerald-400 shrink-0 rounded-full bg-emerald-400/20 p-1" />
+                      <Check className="w-6 h-6 text-emerald-400 shrink-0 rounded-full bg-emerald-400/20 p-1 mt-0.5" />
                     ) : (
-                      <Circle className="w-6 h-6 text-slate-500 shrink-0" />
+                      <Circle className="w-6 h-6 text-slate-500 shrink-0 mt-0.5" />
                     )}
                     {trainingMode === TRAINING_MODE_SPLIT && /^sp_/.test(ex.id) && (
                       <SplitPoseThumb exerciseId={ex.id} />
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-medium text-sm ${done ? 'text-slate-500 line-through' : 'text-slate-100'}`}>{name}</p>
-                      <p className="text-slate-400 text-xs mt-0.5">
+                    <div className="min-w-0 flex-1 overflow-hidden">
+                      <p
+                        className={`font-medium text-sm leading-snug break-words ${done ? 'text-slate-500 line-through' : 'text-slate-100'}`}
+                      >
+                        {name}
+                      </p>
+                      <p className="text-slate-400 text-xs mt-1 leading-relaxed break-words">
                         {ex.sets} เซต {repDisplay !== '-' ? `· ${repDisplay}` : ''}
                         {ex.badge && (
-                          <span className={`ml-2 text-xs ${trainingMode === TRAINING_MODE_SPLIT ? 'text-violet-400/90' : 'text-amber-400/80'}`}>
+                          <span className={`ml-1.5 text-xs ${trainingMode === TRAINING_MODE_SPLIT ? 'text-violet-400/90' : 'text-amber-400/80'}`}>
                             · {ex.badge}
                           </span>
                         )}
@@ -1266,27 +1284,38 @@ export default function App() {
                       {!isWarmup && (() => {
                         const suggestion = getWeightSuggestion(ex.id, inputUnit);
                         const history = getWeightHistoryForExercise(ex.id);
+                        const unitLabel = inputUnit === 's' ? 'วินาที' : inputUnit === 'kg' ? 'กก.' : inputUnit;
                         return (
-                          <div className="mt-2 space-y-1.5">
+                          <div className="mt-2.5 space-y-2 rounded-xl bg-black/20 px-3 py-2.5 border border-white/10">
                             {suggestion.lastWeight != null && (
-                              <p className="text-cyan-400/90 text-xs font-medium">
-                                ครั้งก่อน: <span className="text-emerald-400/95">{suggestion.lastWeight} {inputUnit}</span>
-                                {suggestion.suggestText != null && (
-                                  <span className="block text-emerald-400/90 font-normal mt-0.5">แนะนำ: {suggestion.suggestText}</span>
+                              <div className="space-y-1.5 text-xs leading-relaxed">
+                                <p className="text-cyan-400/95 font-medium">
+                                  ครั้งก่อนล่าสุด:{' '}
+                                  <span className="text-emerald-300">
+                                    {suggestion.lastWeight} {unitLabel}
+                                  </span>
+                                </p>
+                                {suggestion.compareNote && (
+                                  <p className="text-slate-400 text-[11px] leading-relaxed break-words">{suggestion.compareNote}</p>
                                 )}
-                              </p>
+                                {suggestion.adviceLine && (
+                                  <p className="text-emerald-400/95 leading-relaxed break-words">{suggestion.adviceLine}</p>
+                                )}
+                              </div>
                             )}
                             {history.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5">
-                                <span className="text-slate-500 text-[10px] uppercase tracking-wider self-center">สถิติ:</span>
-                                {history.map(({ date, weight }) => (
-                                  <span
-                                    key={date}
-                                    className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/10 text-slate-300 text-[11px] border border-white/10"
-                                  >
-                                    {formatDateThai(date)} {weight} {inputUnit}
-                                  </span>
-                                ))}
+                              <div className={suggestion.lastWeight != null ? 'pt-2 border-t border-white/10' : ''}>
+                                <p className="text-slate-500 text-[10px] uppercase tracking-wider mb-1.5">2 ครั้งล่าสุดที่บันทึก</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {history.map(({ date, weight }) => (
+                                    <span
+                                      key={date}
+                                      className="inline-flex items-center px-2 py-1 rounded-lg bg-white/10 text-slate-200 text-[11px] border border-white/10 whitespace-nowrap"
+                                    >
+                                      {formatDateThai(date)} · {weight} {unitLabel}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -1294,66 +1323,68 @@ export default function App() {
                       })()}
                     </div>
                   </button>
-                  <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => openYouTubeSearch(searchKey)}
-                      className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
-                      title="ดูตัวอย่างใน YouTube"
-                    >
-                      <Youtube className="w-5 h-5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openGoogleImageSearch(searchKey)}
-                      className="p-2 rounded-lg bg-slate-500/20 text-slate-300 hover:bg-slate-500/30 transition-colors"
-                      title="ดูภาพใน Google"
-                    >
-                      <Image className="w-5 h-5" />
-                    </button>
-                    {(ex.id === PLANK_EXERCISE_ID ||
-                      (trainingMode === TRAINING_MODE_SPLIT && ex.inputUnit === 's')) && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2 min-w-0">
+                    <div onClick={(e) => e.stopPropagation()} className="flex flex-wrap items-center gap-1 shrink-0">
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          ensurePlankAudio();
-                          const workSec = parsePlankDefaultSeconds(displayValue, ex);
-                          const totalSets = Math.min(10, Math.max(1, Number(ex.sets) || 3));
-                          setPlankTimer({
-                            open: true,
-                            running: false,
-                            paused: false,
-                            phase: 'idle',
-                            workSec,
-                            totalSets,
-                            currentSet: 1,
-                            remaining: 0,
-                          });
-                        }}
-                        className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors border border-cyan-400/25"
-                        title="จับเวลา Plank · พัก 1 นาทีระหว่างเซต"
+                        onClick={() => openYouTubeSearch(searchKey)}
+                        className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                        title="ดูตัวอย่างใน YouTube"
                       >
-                        <Timer className="w-5 h-5" />
+                        <Youtube className="w-5 h-5" />
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => openGoogleImageSearch(searchKey)}
+                        className="p-2 rounded-lg bg-slate-500/20 text-slate-300 hover:bg-slate-500/30 transition-colors"
+                        title="ดูภาพใน Google"
+                      >
+                        <Image className="w-5 h-5" />
+                      </button>
+                      {(ex.id === PLANK_EXERCISE_ID ||
+                        (trainingMode === TRAINING_MODE_SPLIT && ex.inputUnit === 's')) && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            ensurePlankAudio();
+                            const workSec = parsePlankDefaultSeconds(displayValue, ex);
+                            const totalSets = Math.min(10, Math.max(1, Number(ex.sets) || 3));
+                            setPlankTimer({
+                              open: true,
+                              running: false,
+                              paused: false,
+                              phase: 'idle',
+                              workSec,
+                              totalSets,
+                              currentSet: 1,
+                              remaining: 0,
+                            });
+                          }}
+                          className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors border border-cyan-400/25"
+                          title="จับเวลา Plank · พัก 1 นาทีระหว่างเซต"
+                        >
+                          <Timer className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                    {!isWarmup && (
+                      <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 shrink-0 ml-auto">
+                        <Weight className="w-4 h-4 text-slate-500 shrink-0" />
+                        <input
+                          type="number"
+                          inputMode={inputUnit === 's' ? 'numeric' : 'decimal'}
+                          min="0"
+                          step={inputUnit === 's' ? 1 : 0.5}
+                          placeholder={inputUnit}
+                          value={displayValue != null ? String(displayValue) : ''}
+                          onChange={(e) => setExerciseWeight(ex.id, e.target.value)}
+                          className="w-16 sm:w-[4.5rem] text-right bg-black/20 border border-white/10 rounded-lg px-2 py-2 text-slate-100 text-sm focus:border-cyan-400/50 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <span className="text-slate-500 text-xs shrink-0 w-8">{inputUnit}</span>
+                      </div>
                     )}
                   </div>
-                  {!isWarmup && (
-                    <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center gap-1">
-                      <Weight className="w-4 h-4 text-slate-500" />
-                      <input
-                        type="number"
-                        inputMode={inputUnit === 's' ? 'numeric' : 'decimal'}
-                        min="0"
-                        step={inputUnit === 's' ? 1 : 0.5}
-                        placeholder={inputUnit}
-                        value={displayValue != null ? String(displayValue) : ''}
-                        onChange={(e) => setExerciseWeight(ex.id, e.target.value)}
-                        className="w-14 text-right bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-slate-100 text-sm focus:border-cyan-400/50 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
-                      <span className="text-slate-500 text-xs">{inputUnit}</span>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -1376,50 +1407,65 @@ export default function App() {
                     return (
                       <div
                         key={ex.id}
-                        className="w-full flex items-center gap-2 p-4 bg-amber-500/5 backdrop-blur-xl rounded-2xl border border-amber-400/20 hover:border-amber-400/30 transition-all mb-2"
+                        className="w-full flex flex-col gap-3 p-4 bg-amber-500/5 backdrop-blur-xl rounded-2xl border border-amber-400/20 hover:border-amber-400/30 transition-all mb-2 min-w-0"
                       >
                         <button
                           type="button"
                           onClick={() => toggleTrainingDone(ex.id)}
-                          className="flex items-center gap-3 flex-1 min-w-0 text-left active:scale-[0.99]"
+                          className="flex w-full min-w-0 items-start gap-3 text-left active:scale-[0.99]"
                         >
                           {done ? (
-                            <Check className="w-6 h-6 text-emerald-400 shrink-0 rounded-full bg-emerald-400/20 p-1" />
+                            <Check className="w-6 h-6 text-emerald-400 shrink-0 rounded-full bg-emerald-400/20 p-1 mt-0.5" />
                           ) : (
-                            <Circle className="w-6 h-6 text-amber-400/60 shrink-0" />
+                            <Circle className="w-6 h-6 text-amber-400/60 shrink-0 mt-0.5" />
                           )}
-                          <div className="flex-1 min-w-0">
-                            <p className={`font-medium text-sm ${done ? 'text-slate-500 line-through' : 'text-slate-100'}`}>{name}</p>
-                            <p className="text-slate-400 text-xs mt-0.5">
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <p
+                              className={`font-medium text-sm leading-snug break-words ${done ? 'text-slate-500 line-through' : 'text-slate-100'}`}
+                            >
+                              {name}
+                            </p>
+                            <p className="text-slate-400 text-xs mt-1 leading-relaxed break-words">
                               {ex.sets} เซต · {ex.reps} {ex.unit}
                               {ex.badge && (
-                                <span className="ml-2 text-amber-400/80 text-xs">· {ex.badge}</span>
+                                <span className="ml-1.5 text-amber-400/80 text-xs">· {ex.badge}</span>
                               )}
                             </p>
                             {(() => {
                               const suggestion = getWeightSuggestion(ex.id, inputUnit);
                               const history = getWeightHistoryForExercise(ex.id);
+                              const unitLabel = inputUnit === 's' ? 'วินาที' : inputUnit === 'kg' ? 'กก.' : inputUnit;
                               return (
-                                <div className="mt-2 space-y-1.5">
+                                <div className="mt-2.5 space-y-2 rounded-xl bg-black/20 px-3 py-2.5 border border-amber-400/15">
                                   {suggestion.lastWeight != null && (
-                                    <p className="text-cyan-400/90 text-xs font-medium">
-                                      ครั้งก่อน: <span className="text-emerald-400/95">{suggestion.lastWeight} {inputUnit}</span>
-                                      {suggestion.suggestText != null && (
-                                        <span className="block text-emerald-400/90 font-normal mt-0.5">แนะนำ: {suggestion.suggestText}</span>
+                                    <div className="space-y-1.5 text-xs leading-relaxed">
+                                      <p className="text-cyan-400/95 font-medium">
+                                        ครั้งก่อนล่าสุด:{' '}
+                                        <span className="text-emerald-300">
+                                          {suggestion.lastWeight} {unitLabel}
+                                        </span>
+                                      </p>
+                                      {suggestion.compareNote && (
+                                        <p className="text-slate-400 text-[11px] leading-relaxed break-words">{suggestion.compareNote}</p>
                                       )}
-                                    </p>
+                                      {suggestion.adviceLine && (
+                                        <p className="text-emerald-400/95 leading-relaxed break-words">{suggestion.adviceLine}</p>
+                                      )}
+                                    </div>
                                   )}
                                   {history.length > 0 && (
-                                    <div className="flex flex-wrap gap-1.5">
-                                      <span className="text-slate-500 text-[10px] uppercase tracking-wider self-center">สถิติ:</span>
-                                      {history.map(({ date, weight }) => (
-                                        <span
-                                          key={date}
-                                          className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/10 text-slate-300 text-[11px] border border-white/10"
-                                        >
-                                          {formatDateThai(date)} {weight} {inputUnit}
-                                        </span>
-                                      ))}
+                                    <div className={suggestion.lastWeight != null ? 'pt-2 border-t border-white/10' : ''}>
+                                      <p className="text-slate-500 text-[10px] uppercase tracking-wider mb-1.5">2 ครั้งล่าสุดที่บันทึก</p>
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {history.map(({ date, weight }) => (
+                                          <span
+                                            key={date}
+                                            className="inline-flex items-center px-2 py-1 rounded-lg bg-white/10 text-slate-200 text-[11px] border border-white/10 whitespace-nowrap"
+                                          >
+                                            {formatDateThai(date)} · {weight} {unitLabel}
+                                          </span>
+                                        ))}
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -1427,37 +1473,39 @@ export default function App() {
                             })()}
                           </div>
                         </button>
-                        <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => openYouTubeSearch(searchKey)}
-                            className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
-                            title="ดูตัวอย่างใน YouTube"
-                          >
-                            <Youtube className="w-5 h-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openGoogleImageSearch(searchKey)}
-                            className="p-2 rounded-lg bg-slate-500/20 text-slate-300 hover:bg-slate-500/30 transition-colors"
-                            title="ดูภาพใน Google"
-                          >
-                            <Image className="w-5 h-5" />
-                          </button>
-                        </div>
-                        <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex items-center gap-1">
-                          <Weight className="w-4 h-4 text-slate-500" />
-                          <input
-                            type="number"
-                            inputMode={inputUnit === 's' ? 'numeric' : 'decimal'}
-                            min="0"
-                            step={inputUnit === 's' ? 1 : 0.5}
-                            placeholder={inputUnit}
-                            value={displayValue != null ? String(displayValue) : ''}
-                            onChange={(e) => setExerciseWeight(ex.id, e.target.value)}
-                            className="w-14 text-right bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-slate-100 text-sm focus:border-cyan-400/50 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                          <span className="text-slate-500 text-xs">{inputUnit}</span>
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-amber-400/15 pt-2 min-w-0">
+                          <div onClick={(e) => e.stopPropagation()} className="flex flex-wrap items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => openYouTubeSearch(searchKey)}
+                              className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                              title="ดูตัวอย่างใน YouTube"
+                            >
+                              <Youtube className="w-5 h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openGoogleImageSearch(searchKey)}
+                              className="p-2 rounded-lg bg-slate-500/20 text-slate-300 hover:bg-slate-500/30 transition-colors"
+                              title="ดูภาพใน Google"
+                            >
+                              <Image className="w-5 h-5" />
+                            </button>
+                          </div>
+                          <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 shrink-0 ml-auto">
+                            <Weight className="w-4 h-4 text-slate-500 shrink-0" />
+                            <input
+                              type="number"
+                              inputMode={inputUnit === 's' ? 'numeric' : 'decimal'}
+                              min="0"
+                              step={inputUnit === 's' ? 1 : 0.5}
+                              placeholder={inputUnit}
+                              value={displayValue != null ? String(displayValue) : ''}
+                              onChange={(e) => setExerciseWeight(ex.id, e.target.value)}
+                              className="w-16 sm:w-[4.5rem] text-right bg-black/20 border border-white/10 rounded-lg px-2 py-2 text-slate-100 text-sm focus:border-cyan-400/50 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            <span className="text-slate-500 text-xs shrink-0 w-8">{inputUnit}</span>
+                          </div>
                         </div>
                       </div>
                     );
