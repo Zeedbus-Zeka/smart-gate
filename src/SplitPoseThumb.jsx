@@ -74,6 +74,12 @@ export const SPLIT_POSE_BY_EX_ID = {
   sp_ar_ab2: 'runner',
   sp_ar_lg1: 'squatFront',
   sp_ar_lg2: 'calfSit',
+  sp_lg_0: 'bike',
+  sp_lg_1: 'squat',
+  sp_lg_2: 'hinge',
+  sp_lg_3: 'bridgeHam',
+  sp_lg_4: 'calfUp',
+  sp_lt_0: 'armCircle',
 };
 
 const POSE_ICON = {
