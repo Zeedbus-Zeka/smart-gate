@@ -79,7 +79,9 @@ export const SPLIT_POSE_BY_EX_ID = {
   sp_lg_2: 'hinge',
   sp_lg_3: 'bridgeHam',
   sp_lg_4: 'calfUp',
+  sp_lg_ab1: 'crunch',
   sp_lt_0: 'armCircle',
+  sp_lt_ab1: 'deadBug',
 };
 
 const POSE_ICON = {

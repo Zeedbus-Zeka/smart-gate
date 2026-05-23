@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image, Navigation, ChevronRight, Save, Timer, Play, Pause, Square, Info, Footprints, Droplets, Activity, Moon } from 'lucide-react';
+import { MapPin, Unlock, User, AlertCircle, LogOut, ShieldCheck, Power, Home, Dumbbell, ClipboardList, Check, Circle, Building2, Sparkles, Coffee, RotateCcw, Trophy, Calendar, Weight, Youtube, Image, Navigation, ChevronRight, Save, Timer, Play, Pause, Square, Info, Footprints, Droplets, Activity, Moon, ScanFace } from 'lucide-react';
 import SplitPoseThumb from './SplitPoseThumb';
 import { supabase } from './supabaseClient';
 
@@ -215,7 +215,7 @@ const SPLIT_DAY_CHEST = [
   { id: 'sp_ch_1', nameGym: 'Barbell / Smith Bench Press', nameHome: 'Board Push-up 🔵 (อก) / Push-up มาตรฐาน', sets: 4, reps: '8-12', unit: 'ครั้ง', searchKey: 'bench press form gym', searchKeyHome: 'push up board chest home' },
   { id: 'sp_ch_2', nameGym: 'Incline Dumbbell Press', nameHome: 'Decline Push-up (เท้าสูง) / ดันกระเป๋าเอียง', sets: 3, reps: '10-12', unit: 'ครั้ง', searchKey: 'incline dumbbell press', searchKeyHome: 'decline push up chest' },
   { id: 'sp_ch_3', nameGym: 'Cable / Dumbbell Fly', nameHome: 'เปิดอกยางยืด / ขวดน้ำ fly', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'cable chest fly', searchKeyHome: 'resistance band chest fly home' },
-  { id: 'sp_ch_ab2', nameGym: 'Plank ค้าง (แกนกลาง)', nameHome: 'Plank (ค้างท้องแน่น)', sets: 3, reps: '30-45', unit: 'วินาที', inputUnit: 's', badge: 'แกนกลาง', searchKey: 'plank abs form', searchKeyHome: 'plank hold home' },
+  { id: 'sp_ch_ab2', nameGym: 'Plank ค้าง (แกนกลาง)', nameHome: 'Plank (ค้างท้องแน่น)', sets: 3, reps: '30-45', unit: 'วินาที', inputUnit: 's', badge: 'ท้อง', searchKey: 'plank abs form', searchKeyHome: 'plank hold home' },
 ];
 
 const SPLIT_DAY_SHOULDERS = [
@@ -224,14 +224,14 @@ const SPLIT_DAY_SHOULDERS = [
   { id: 'sp_sh_2', nameGym: 'Lateral Raise', nameHome: 'ยกขวดน้ำด้านข้าง แขนตรง', sets: 4, reps: '12-15', unit: 'ครั้ง', badge: 'ไหล่กว้าง', searchKey: 'dumbbell lateral raise', searchKeyHome: 'lateral raise water bottles' },
   { id: 'sp_sh_3', nameGym: 'Rear Delt Fly / Reverse Pec Deck', nameHome: 'งอตัวดึงยางแยกสะบัก', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'rear delt fly dumbbell', searchKeyHome: 'band rear delt fly home' },
   { id: 'sp_sh_4', nameGym: 'Face Pull (rope)', nameHome: 'ดึงยางระดับหน้าผาก (ท่าทางเครื่องแบบ)', sets: 3, reps: '15-20', unit: 'ครั้ง', searchKey: 'face pull cable', searchKeyHome: 'resistance band face pull' },
-  { id: 'sp_sh_ab2', nameGym: 'Side Plank (ด้านละข้าง)', nameHome: 'Side plank ด้านละข้าง', sets: 2, reps: '20-40', unit: 'วินาที', inputUnit: 's', badge: 'แกนกลาง', searchKey: 'side plank form', searchKeyHome: 'side plank home' },
+  { id: 'sp_sh_ab2', nameGym: 'Side Plank (ด้านละข้าง)', nameHome: 'Side plank ด้านละข้าง', sets: 2, reps: '20-40', unit: 'วินาที', inputUnit: 's', badge: 'ท้อง', searchKey: 'side plank form', searchKeyHome: 'side plank home' },
 ];
 
 const SPLIT_DAY_BACK = [
   { id: 'sp_bk_0', nameGym: 'Warm-up: ดึงสายแถบบน · แกว่งหลัง 5–8 นาที', nameHome: 'Cat-cow · Superman เบาๆ', sets: 1, reps: '-', unit: '', searchKey: 'back workout warm up', searchKeyHome: 'back warm up home cat cow' },
   { id: 'sp_bk_1', nameGym: 'Lat Pulldown', nameHome: 'Board Push-up 🟡 (หลัง) จังหวะบีบสะบัก', sets: 4, reps: '10-12', unit: 'ครั้ง', searchKey: 'lat pulldown form', searchKeyHome: 'push up board back' },
   { id: 'sp_bk_2', nameGym: 'Seated Cable Row', nameHome: 'ดึงกระเป๋า / แถวท่อนแขนงอเข่า', sets: 4, reps: '10-12', unit: 'ครั้ง', searchKey: 'seated cable row', searchKeyHome: 'bent over row backpack home' },
-  { id: 'sp_bk_ab2', nameGym: 'Dead Bug', nameHome: 'Dead bug ท้องแน่น', sets: 3, reps: '10', unit: 'ครั้ง/ข้าง', badge: 'แกนกลาง', searchKey: 'dead bug exercise', searchKeyHome: 'dead bug abs home' },
+  { id: 'sp_bk_ab2', nameGym: 'Dead Bug', nameHome: 'Dead bug ท้องแน่น', sets: 3, reps: '10', unit: 'ครั้ง/ข้าง', badge: 'ท้อง', searchKey: 'dead bug exercise', searchKeyHome: 'dead bug abs home' },
 ];
 
 const SPLIT_DAY_ARMS = [
@@ -239,6 +239,7 @@ const SPLIT_DAY_ARMS = [
   { id: 'sp_ar_1', nameGym: 'Barbell / EZ Curl', nameHome: 'ดัมเบล / ขวดน้ำ Curl ท่ามาตรฐาน', sets: 3, reps: '10-15', unit: 'ครั้ง', searchKey: 'barbell bicep curl', searchKeyHome: 'bicep curl dumbbell home' },
   { id: 'sp_ar_3', nameGym: 'Triceps Rope Pushdown', nameHome: 'Board Push-up 🟢 (หลังแขน) ศอกหนีบ', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'triceps rope pushdown', searchKeyHome: 'push up board triceps' },
   { id: 'sp_ar_4', nameGym: 'Overhead Triceps Extension', nameHome: 'เหยียดศอกหลังศีรษะ (ขวด/ดัมเบล)', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'overhead tricep extension cable', searchKeyHome: 'overhead tricep extension home' },
+  { id: 'sp_ar_ab1', nameGym: 'Cable Pallof Press / Wood Chop', nameHome: 'ยืดยาง Pallof · หมุนลำตัวเบา', sets: 3, reps: '12-15', unit: 'ครั้ง/ข้าง', badge: 'ท้อง', searchKey: 'pallof press cable', searchKeyHome: 'pallof press resistance band' },
 ];
 
 const SPLIT_DAY_LEGS = [
@@ -247,6 +248,7 @@ const SPLIT_DAY_LEGS = [
   { id: 'sp_lg_2', nameGym: 'Romanian Deadlift (RDL)', nameHome: 'โยนสะโพกถือดัมเบล / ขวด', sets: 3, reps: '10-12', unit: 'ครั้ง', searchKey: 'romanian deadlift form dumbbell', searchKeyHome: 'romanian deadlift dumbbell home' },
   { id: 'sp_lg_3', nameGym: 'Lying Leg Curl', nameHome: 'Glute bridge · ขาสไลด์บนพื้น', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'lying leg curl machine', searchKeyHome: 'glute bridge hamstring slide home' },
   { id: 'sp_lg_4', nameGym: 'Standing / Seated Calf Raise', nameHome: 'ยกส้นเท้า (พื้น/ขั้น)', sets: 3, reps: '15-20', unit: 'ครั้ง', searchKey: 'standing calf raise smith', searchKeyHome: 'calf raises stairs home' },
+  { id: 'sp_lg_ab1', nameGym: 'Cable Crunch / Ab Machine', nameHome: 'Crunch ท้อง (ขาโก้งพื้น)', sets: 3, reps: '15-20', unit: 'ครั้ง', badge: 'ท้อง', searchKey: 'cable crunch abs', searchKeyHome: 'crunches abs home' },
 ];
 
 /** รอบเบา: ซ้อนความถี่ 2 ครั้ง/สัปดาห์ (อก · หลัง · ไหล่) */
@@ -256,6 +258,7 @@ const SPLIT_DAY_LIGHT = [
   { id: 'sp_bk_1', nameGym: 'Lat Pulldown (เบา)', nameHome: 'ดึงยาง/ถุงเบา', sets: 3, reps: '12-15', unit: 'ครั้ง', badge: 'รอบเบา · หลัง', searchKey: 'lat pulldown light weight', searchKeyHome: 'resistance band pulldown' },
   { id: 'sp_sh_2', nameGym: 'Lateral Raise (เบา)', nameHome: 'ยกขวดเบา', sets: 3, reps: '12-15', unit: 'ครั้ง', badge: 'รอบเบา · ไหล่กว้าง', searchKey: 'lateral raise light dumbbell', searchKeyHome: 'lateral raise water bottles' },
   { id: 'sp_sh_4', nameGym: 'Face Pull (เบา)', nameHome: 'ดึงยางหน้าผากเบา', sets: 2, reps: '15-20', unit: 'ครั้ง', badge: 'รอบเบา · ท่าทาง', searchKey: 'face pull light', searchKeyHome: 'resistance band face pull' },
+  { id: 'sp_lt_ab1', nameGym: 'Dead Bug (เบา)', nameHome: 'Dead bug เบา · ท้องแน่น', sets: 2, reps: '8-10', unit: 'ครั้ง/ข้าง', badge: 'รอบเบา · ท้อง', searchKey: 'dead bug light', searchKeyHome: 'dead bug abs home' },
 ];
 
 /** ลำดับโปรแกรมตามวัน 1–7 (index 2 = วัน 3 พัก → ไม่มีท่า) */
@@ -278,6 +281,145 @@ const getSplitDayExerciseIds = (day) => getSplitProgramForDay(day).map((e) => e.
 
 const getSplitDayLabel = (day) =>
   day >= 1 && day <= SPLIT_SCHEDULE_DAYS ? TARGET_SPLIT_DAY_LABELS[day - 1] : '';
+
+// ==========================================
+// 🙂 บริหารหน้า–คอ (กันหย่อน) — โหมดเฉพาะจุด
+// ==========================================
+const FACE_NECK_EXERCISES = {
+  fn_nk_1: {
+    id: 'fn_nk_1',
+    nameGym: 'Chin tuck — ดึงหัวถอยหลัง (คางสองชั้น ไม่ก้มคอ)',
+    nameHome: 'Chin tuck — ดึงหัวถอยหลัง (คางสองชั้น ไม่ก้มคอ)',
+    sets: 2,
+    reps: '10',
+    unit: 'ครั้ง · ค้าง 5 วิ',
+    badge: 'คอ',
+    searchKey: 'chin tuck exercise proper form',
+    searchKeyHome: 'chin tuck exercise at home',
+  },
+  fn_nk_2: {
+    id: 'fn_nk_2',
+    nameGym: 'ยืดกล้ามคอด้านข้าง (SCM)',
+    nameHome: 'ยืดกล้ามคอด้านข้าง (SCM)',
+    sets: 2,
+    reps: '20-30',
+    unit: 'วิ/ข้าง',
+    badge: 'คอ',
+    searchKey: 'sternocleidomastoid stretch seated',
+    searchKeyHome: 'neck side stretch at home',
+  },
+  fn_nk_3: {
+    id: 'fn_nk_3',
+    nameGym: 'ยืดท้ายทอย / สะบักบนเบา',
+    nameHome: 'ยืดท้ายทอย / สะบักบนเบา',
+    sets: 2,
+    reps: '20-30',
+    unit: 'วิ',
+    badge: 'คอ',
+    searchKey: 'upper trapezius stretch chair',
+    searchKeyHome: 'neck stretch upper trapezius home',
+  },
+  fn_nk_4: {
+    id: 'fn_nk_4',
+    nameGym: 'เปิด–ปากช้า ๆ (ประสานคอเบา)',
+    nameHome: 'เปิด–ปากช้า ๆ (ประสานคอเบา)',
+    sets: 1,
+    reps: '10-15',
+    unit: 'ครั้ง ช้า ๆ',
+    badge: 'คอ',
+    searchKey: 'jaw opening exercise neck coordination',
+    searchKeyHome: 'jaw neck mobility exercise home',
+  },
+  fn_fc_1: {
+    id: 'fn_fc_1',
+    nameGym: 'ยิ้มกดริมฝีปาก (Lip press smile)',
+    nameHome: 'ยิ้มกดริมฝีปาก (Lip press smile)',
+    sets: 2,
+    reps: '10',
+    unit: 'ครั้ง · ค้าง 10 วิ',
+    badge: 'ใบหน้า',
+    searchKey: 'lip press smile facial exercise',
+    searchKeyHome: 'lip press exercise face yoga',
+  },
+  fn_fc_2: {
+    id: 'fn_fc_2',
+    nameGym: 'ปลา (Fish face) — ดูดแก้ม',
+    nameHome: 'ปลา (Fish face) — ดูดแก้ม',
+    sets: 2,
+    reps: '10',
+    unit: 'ครั้ง · ค้าง 5-10 วิ',
+    badge: 'ใบหน้า',
+    searchKey: 'fish face exercise cheeks',
+    searchKeyHome: 'fish face facial exercise',
+  },
+  fn_fc_3: {
+    id: 'fn_fc_3',
+    nameGym: 'ยกแก้ม (Cheek lift)',
+    nameHome: 'ยกแก้ม (Cheek lift)',
+    sets: 2,
+    reps: '10',
+    unit: 'ครั้ง/ข้าง',
+    badge: 'ใบหน้า',
+    searchKey: 'cheek lift facial exercise',
+    searchKeyHome: 'cheek lift exercise face yoga',
+  },
+  fn_fc_4: {
+    id: 'fn_fc_4',
+    nameGym: 'หลับตา + ยกคิ้ว',
+    nameHome: 'หลับตา + ยกคิ้ว',
+    sets: 2,
+    reps: '10',
+    unit: 'ครั้ง',
+    badge: 'ใบหน้า',
+    searchKey: 'forehead exercise anti aging face',
+    searchKeyHome: 'forehead lift facial exercise',
+  },
+  fn_fc_5: {
+    id: 'fn_fc_5',
+    nameGym: 'อ้าปาก O → ยิ้มแคบ',
+    nameHome: 'อ้าปาก O → ยิ้มแคบ',
+    sets: 2,
+    reps: '10',
+    unit: 'ครั้ง',
+    badge: 'ใบหน้า',
+    searchKey: 'facial exercise O mouth smile',
+    searchKeyHome: 'face yoga mouth exercise',
+  },
+  fn_fc_6: {
+    id: 'fn_fc_6',
+    nameGym: 'ลิ้นแตะเพดาน + ยิ้มเบา (ใต้คาง)',
+    nameHome: 'ลิ้นแตะเพดาน + ยิ้มเบา (ใต้คาง)',
+    sets: 2,
+    reps: '10',
+    unit: 'ครั้ง · ค้าง 10 วิ',
+    badge: 'ใบหน้า',
+    searchKey: 'tongue to palate mewing exercise',
+    searchKeyHome: 'tongue posture exercise jawline',
+  },
+};
+
+const FN_NECK_IDS = ['fn_nk_1', 'fn_nk_2', 'fn_nk_3', 'fn_nk_4'];
+const FN_FACE_IDS = ['fn_fc_1', 'fn_fc_2', 'fn_fc_3', 'fn_fc_4', 'fn_fc_5', 'fn_fc_6'];
+const FN_FULL_IDS = [...FN_NECK_IDS, ...FN_FACE_IDS];
+
+/** ท่าหน้า–คอตามวัน 1–7 (จ–อา) */
+const SPLIT_FACE_NECK_IDS_BY_DAY = {
+  1: ['fn_nk_1'],
+  2: FN_FULL_IDS,
+  3: FN_FULL_IDS,
+  4: ['fn_nk_1'],
+  5: ['fn_nk_1', 'fn_fc_1', 'fn_fc_2', 'fn_fc_6'],
+  6: ['fn_nk_1'],
+  7: ['fn_nk_1', ...FN_FACE_IDS],
+};
+
+const getFaceNeckProgramForSplitDay = (day) => {
+  const ids = SPLIT_FACE_NECK_IDS_BY_DAY[day];
+  if (!ids) return [];
+  return ids.map((id) => FACE_NECK_EXERCISES[id]).filter(Boolean);
+};
+
+const isFaceNeckExerciseId = (id) => /^fn_/.test(id);
 
 const TRAINING_STORAGE_KEY_PREFIX = 'smartgate_training';
 const getTrainingStorageKey = (userId) => (userId ? `${TRAINING_STORAGE_KEY_PREFIX}_${userId}` : null);
@@ -314,7 +456,7 @@ function applyTrainingStoragePayload(data, setters) {
       });
     } else {
       const keys = Object.keys(data.completedIds);
-      const hasSplitIds = keys.some((k) => k.startsWith('sp_'));
+      const hasSplitIds = keys.some((k) => k.startsWith('sp_') || k.startsWith('fn_'));
       setTrainingCompletedIds(
         hasSplitIds ? { hybrid: {}, split: data.completedIds } : { hybrid: data.completedIds, split: {} }
       );
@@ -406,6 +548,76 @@ const getExerciseSearchKey = (ex, place) => {
 };
 const openYouTubeSearch = (query) => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' how to form')}`, '_blank', 'noopener,noreferrer');
 const openGoogleImageSearch = (query) => window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query + ' exercise')}`, '_blank', 'noopener,noreferrer');
+
+function FaceNeckExerciseList({ exercises, completedIds, onToggle, trainingPlace }) {
+  if (!exercises?.length) return null;
+  return (
+    <div className="pt-3 space-y-3">
+      <div className="px-1">
+        <p className="text-rose-300/95 text-sm font-semibold flex items-center gap-2">
+          <ScanFace className="w-4 h-4 shrink-0" />
+          บริหารหน้าและคอ (กันหย่อน)
+        </p>
+        <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">
+          ทำช้า ๆ ไม่เจ็บ · ไม่บีบฟัน · แตะ YouTube / ภาพ ดูท่าก่อนทำ
+        </p>
+      </div>
+      {exercises.map((ex) => {
+        const name = trainingPlace === 'gym' ? ex.nameGym : ex.nameHome;
+        const done = completedIds[ex.id];
+        const repDisplay = ex.unit ? `${ex.reps} ${ex.unit}` : ex.reps;
+        const searchKey = getExerciseSearchKey(ex, trainingPlace);
+        return (
+          <div
+            key={ex.id}
+            className="w-full flex flex-col gap-3 p-4 bg-rose-500/5 backdrop-blur-xl rounded-2xl border border-rose-400/25 hover:border-rose-400/35 transition-all min-w-0"
+          >
+            <button
+              type="button"
+              onClick={() => onToggle(ex.id)}
+              className="flex w-full min-w-0 items-start gap-3 text-left active:scale-[0.99]"
+            >
+              {done ? (
+                <Check className="w-6 h-6 text-emerald-400 shrink-0 rounded-full bg-emerald-400/20 p-1 mt-0.5" />
+              ) : (
+                <Circle className="w-6 h-6 text-slate-500 shrink-0 mt-0.5" />
+              )}
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <p
+                  className={`font-medium text-sm leading-snug break-words ${done ? 'text-slate-500 line-through' : 'text-slate-100'}`}
+                >
+                  {name}
+                </p>
+                <p className="text-slate-400 text-xs mt-1 leading-relaxed break-words">
+                  {ex.sets} เซต · {repDisplay}
+                  {ex.badge && <span className="ml-1.5 text-rose-400/90">· {ex.badge}</span>}
+                </p>
+              </div>
+            </button>
+            <div className="flex flex-wrap items-center gap-1 border-t border-rose-400/15 pt-2 min-w-0" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => openYouTubeSearch(searchKey)}
+                className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                title="ดูตัวอย่างใน YouTube"
+              >
+                <Youtube className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => openGoogleImageSearch(searchKey)}
+                className="p-2 rounded-lg bg-slate-500/20 text-slate-300 hover:bg-slate-500/30 transition-colors"
+                title="ดูภาพใน Google"
+              >
+                <Image className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 const PLANK_EXERCISE_ID = 'a5';
 const PLANK_REST_SECONDS = 60;
@@ -647,6 +859,10 @@ export default function App() {
     };
   }, [user]);
 
+  const currentFaceNeckProgram =
+    trainingMode === TRAINING_MODE_SPLIT ? getFaceNeckProgramForSplitDay(trainingDay) : [];
+  const currentFaceNeckIds = currentFaceNeckProgram.map((e) => e.id);
+
   const currentProgram =
     trainingMode === TRAINING_MODE_HYBRID
       ? getProgramForWeekDay(trainingWeek, trainingDay)
@@ -659,18 +875,30 @@ export default function App() {
       : trainingDay >= 1 && trainingDay <= SPLIT_SCHEDULE_DAYS
         ? `เฉพาะจุด · ${getSplitDayLabel(trainingDay)}`
         : '';
-  const currentDayIds =
+
+  const mainDayIds =
     trainingMode === TRAINING_MODE_HYBRID
       ? getCurrentDayExerciseIds(trainingWeek, trainingDay)
       : isSplitWorkoutDay(trainingDay)
         ? getSplitDayExerciseIds(trainingDay)
         : [];
-  /** นับความครบเพื่อปุ่มบันทึก: ไม่รวม warm-up (reps '-') ท่าหลัก + ท่าเสริมที่ไม่อยู่ใน currentProgram ยังนับตามปกติ */
-  const completionDayIds = currentDayIds.filter((id) => {
-    const ex = currentProgram.find((e) => e.id === id);
-    if (!ex) return true;
-    return ex.reps !== '-';
-  });
+  const currentDayIds = [...mainDayIds, ...currentFaceNeckIds];
+
+  const showSplitFaceNeckOnly =
+    trainingMode === TRAINING_MODE_SPLIT && isSplitRestDay(trainingDay) && currentFaceNeckProgram.length > 0;
+  const showMainWorkout =
+    (trainingMode === TRAINING_MODE_HYBRID && trainingDay !== 4) ||
+    (trainingMode === TRAINING_MODE_SPLIT && isSplitWorkoutDay(trainingDay));
+
+  /** นับความครบ: ไม่รวม warm-up ยิม · รวมท่าหน้า–คอทุกท่า */
+  const completionDayIds = [
+    ...mainDayIds.filter((id) => {
+      const ex = currentProgram.find((e) => e.id === id);
+      if (!ex) return true;
+      return ex.reps !== '-';
+    }),
+    ...currentFaceNeckIds,
+  ];
   const trainingDoneCount = completionDayIds.filter((id) => completedIdsCurrent[id]).length;
   const trainingTotalCount = completionDayIds.length;
   const trainingAllDone = trainingTotalCount > 0 && trainingDoneCount === trainingTotalCount;
@@ -828,11 +1056,13 @@ export default function App() {
     .sort((a, b) => (b.savedAt > a.savedAt ? 1 : -1))[0];
   const saveSessionRecord = () => {
     if (!currentSessionDate) return;
-    if (trainingDay === SPLIT_REST_DAY) return;
     if (trainingMode === TRAINING_MODE_HYBRID && trainingDay === 4) return;
-    if (trainingMode === TRAINING_MODE_SPLIT && !isSplitWorkoutDay(trainingDay)) return;
+    const splitRestFaceNeckOnly =
+      trainingMode === TRAINING_MODE_SPLIT && isSplitRestDay(trainingDay);
+    if (trainingMode === TRAINING_MODE_SPLIT && !isSplitWorkoutDay(trainingDay) && !splitRestFaceNeckOnly) return;
     const weightsToSave = { ...currentSessionWeights };
     currentDayIds.forEach((id) => {
+      if (isFaceNeckExerciseId(id)) return;
       if (weightsToSave[id] == null) {
         const last = getLastWeightForExercise(id);
         if (last != null) weightsToSave[id] = last;
@@ -841,7 +1071,9 @@ export default function App() {
     const planLabel =
       trainingMode === TRAINING_MODE_HYBRID
         ? getPlanForDay(trainingWeek, trainingDay)
-        : `Split · ${getSplitDayLabel(trainingDay)}`;
+        : splitRestFaceNeckOnly
+          ? `Split · พัก · บริหารหน้า-คอ`
+          : `Split · ${getSplitDayLabel(trainingDay)}`;
     setSessionRecords((prev) =>
       prev.concat({
         sessionDate: currentSessionDate,
@@ -1241,7 +1473,7 @@ export default function App() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-violet-200">ปฏิทินแนะนำ · กล้ามหลัก ~2 ครั้ง/สัปดาห์</p>
                     <p className="text-slate-400 text-xs mt-1 leading-relaxed">
-                      เลือก <strong className="text-slate-300">วันที่ 1–7</strong> ตามจันทร์–อาทิตย์ — วันละ ~4–5 ท่า (ไม่รวม warm-up)
+                      เลือก <strong className="text-slate-300">วันที่ 1–7</strong> ตามจันทร์–อาทิตย์ — วันละ ~4–5 ท่าหลัก + ท้อง/แกนกลางท้ายวัน (ไม่รวม warm-up)
                     </p>
                     <p className="text-violet-300/80 text-[11px] mt-1">แตะแถวในตารางเพื่อสลับวันในแอป</p>
                     <div className="mt-2 rounded-lg border border-violet-400/20 overflow-hidden text-xs">
@@ -1268,6 +1500,7 @@ export default function App() {
                       })}
                     </div>
                     <ul className="mt-2 space-y-1.5 text-slate-400 text-[11px] leading-relaxed list-disc list-inside">
+                      <li>ทุกวันฝึกมีท่าท้อง + บริหารหน้า–คอ (กันหย่อน) · พุธ = พักยิม + หน้า–คอเต็มชุด</li>
                       <li>วัน 6 รอบเบา = ซ้อนความถี่อก/หลัง/ไหล่ (เบากว่าวันหนัก)</li>
                       <li>วัน 7 ขา = วันขาแยก · วัน 3 พุธ = พักเต็ม</li>
                       <li>วัน 2 ไหล่ = เน้นไหล่กว้าง + ท่าทางเครื่องแบบ</li>
@@ -1345,14 +1578,86 @@ export default function App() {
             )}
             {trainingMode === TRAINING_MODE_SPLIT && trainingDay === SPLIT_REST_DAY && (
               <RestDayGuide
-                subtitle="พุธ = พักเต็ม · วันถัดไป: วัน 4 หลัง"
+                subtitle="พุธ = พักเต็ม · วันถัดไป: วัน 4 หลัง · ทำบริหารหน้า–คอด้านล่างได้"
                 accent="violet"
               />
             )}
 
+            {/* วันพัก — บริหารหน้า–คออย่างเดียว */}
+            {showSplitFaceNeckOnly && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 p-3 bg-white/5 rounded-xl border border-white/10">
+                  <Calendar className="w-5 h-5 text-rose-400 shrink-0" />
+                  <label className="text-slate-300 text-sm font-medium shrink-0">
+                    วันที่ฝึก
+                    <span className="text-rose-400/90"> (พัก · หน้า-คอ)</span>:
+                  </label>
+                  <input
+                    type="date"
+                    value={currentSessionDate ?? ''}
+                    onChange={(e) =>
+                      setSessionDateByDay((prev) => ({
+                        ...prev,
+                        split: { ...(prev.split || {}), [trainingDay]: e.target.value },
+                      }))
+                    }
+                    className="flex-1 min-w-0 bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm focus:border-rose-400/50 focus:ring-1 focus:ring-rose-400/30 focus:outline-none"
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between text-xs text-slate-400 mb-1">
+                      <span>ทำแล้ว {trainingDoneCount} / {trainingTotalCount} ท่า</span>
+                      {trainingAllDone && (
+                        <span className="text-emerald-400 flex items-center gap-1">
+                          <Trophy className="w-3.5 h-3.5" /> ทำครบแล้ว
+                        </span>
+                      )}
+                    </div>
+                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-rose-500 to-pink-500 rounded-full transition-all duration-300"
+                        style={{ width: `${trainingTotalCount ? (100 * trainingDoneCount) / trainingTotalCount : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearTodayTraining}
+                    className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-slate-200 hover:bg-white/10 text-xs font-medium"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    ล้างวันนี้
+                  </button>
+                </div>
+                <FaceNeckExerciseList
+                  exercises={currentFaceNeckProgram}
+                  completedIds={completedIdsCurrent}
+                  onToggle={toggleTrainingDone}
+                  trainingPlace={trainingPlace}
+                />
+                {trainingAllDone && (
+                  <div className="pt-2 border-t border-white/10 space-y-2">
+                    {lastSavedForCurrentSession ? (
+                      <p className="text-slate-400 text-xs">
+                        บันทึกแล้วเมื่อ {formatSavedAt(lastSavedForCurrentSession.savedAt)}
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={saveSessionRecord}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 hover:bg-emerald-500/30 transition-colors text-sm font-medium"
+                    >
+                      <Save className="w-5 h-5" />
+                      บันทึกวันบริหารหน้า–คอ
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Gym / Home + Progress */}
-            {((trainingMode === TRAINING_MODE_HYBRID && trainingDay !== 4) ||
-              (trainingMode === TRAINING_MODE_SPLIT && isSplitWorkoutDay(trainingDay))) && (
+            {showMainWorkout && (
               <>
                 {/* วันที่ฝึก (แยกตามโหมด + วัน) */}
                 <div className="flex items-center gap-2 p-3 bg-white/5 rounded-xl border border-white/10">
@@ -1713,6 +2018,15 @@ export default function App() {
                     );
                   })}
                 </div>
+                )}
+
+                {trainingMode === TRAINING_MODE_SPLIT && currentFaceNeckProgram.length > 0 && (
+                  <FaceNeckExerciseList
+                    exercises={currentFaceNeckProgram}
+                    completedIds={completedIdsCurrent}
+                    onToggle={toggleTrainingDone}
+                    trainingPlace={trainingPlace}
+                  />
                 )}
 
                 {trainingMode === TRAINING_MODE_SPLIT && (
