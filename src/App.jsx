@@ -549,7 +549,29 @@ const getExerciseSearchKey = (ex, place) => {
 const openYouTubeSearch = (query) => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(query + ' how to form')}`, '_blank', 'noopener,noreferrer');
 const openGoogleImageSearch = (query) => window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query + ' exercise')}`, '_blank', 'noopener,noreferrer');
 
-function FaceNeckExerciseList({ exercises, completedIds, onToggle, trainingPlace }) {
+/** หมายเลขลำดับท่าในวัน (แสดงบนการ์ดแต่ละท่า) */
+function ExerciseStepBadge({ step, total, variant = 'default' }) {
+  const variantClass = {
+    default: 'border-cyan-400/45 bg-cyan-500/15 text-cyan-300',
+    split: 'border-violet-400/45 bg-violet-500/15 text-violet-300',
+    amber: 'border-amber-400/45 bg-amber-500/15 text-amber-300',
+    rose: 'border-rose-400/45 bg-rose-500/15 text-rose-300',
+  }[variant] || 'border-cyan-400/45 bg-cyan-500/15 text-cyan-300';
+  return (
+    <div className="flex flex-col items-center shrink-0 w-9" title={total ? `ท่าที่ ${step} จาก ${total}` : `ท่าที่ ${step}`}>
+      <span
+        className={`w-9 h-9 rounded-xl border flex items-center justify-center text-base font-bold tabular-nums ${variantClass}`}
+      >
+        {step}
+      </span>
+      {total != null && total > 0 && (
+        <span className="text-[9px] text-slate-500 mt-0.5 tabular-nums">/{total}</span>
+      )}
+    </div>
+  );
+}
+
+function FaceNeckExerciseList({ exercises, completedIds, onToggle, trainingPlace, startStep = 1, totalSteps }) {
   if (!exercises?.length) return null;
   return (
     <div className="pt-3 space-y-3">
@@ -562,7 +584,8 @@ function FaceNeckExerciseList({ exercises, completedIds, onToggle, trainingPlace
           ทำช้า ๆ ไม่เจ็บ · ไม่บีบฟัน · แตะ YouTube / ภาพ ดูท่าก่อนทำ
         </p>
       </div>
-      {exercises.map((ex) => {
+      {exercises.map((ex, index) => {
+        const step = startStep + index;
         const name = trainingPlace === 'gym' ? ex.nameGym : ex.nameHome;
         const done = completedIds[ex.id];
         const repDisplay = ex.unit ? `${ex.reps} ${ex.unit}` : ex.reps;
@@ -575,8 +598,9 @@ function FaceNeckExerciseList({ exercises, completedIds, onToggle, trainingPlace
             <button
               type="button"
               onClick={() => onToggle(ex.id)}
-              className="flex w-full min-w-0 items-start gap-3 text-left active:scale-[0.99]"
+              className="flex w-full min-w-0 items-start gap-2.5 text-left active:scale-[0.99]"
             >
+              <ExerciseStepBadge step={step} total={totalSteps} variant="rose" />
               {done ? (
                 <Check className="w-6 h-6 text-emerald-400 shrink-0 rounded-full bg-emerald-400/20 p-1 mt-0.5" />
               ) : (
@@ -586,7 +610,7 @@ function FaceNeckExerciseList({ exercises, completedIds, onToggle, trainingPlace
                 <p
                   className={`font-medium text-sm leading-snug break-words ${done ? 'text-slate-500 line-through' : 'text-slate-100'}`}
                 >
-                  {name}
+                  <span className="text-rose-400/80 font-semibold tabular-nums">{step}.</span> {name}
                 </p>
                 <p className="text-slate-400 text-xs mt-1 leading-relaxed break-words">
                   {ex.sets} เซต · {repDisplay}
@@ -889,6 +913,11 @@ export default function App() {
   const showMainWorkout =
     (trainingMode === TRAINING_MODE_HYBRID && trainingDay !== 4) ||
     (trainingMode === TRAINING_MODE_SPLIT && isSplitWorkoutDay(trainingDay));
+
+  const shoulderExtraStepCount =
+    trainingMode === TRAINING_MODE_HYBRID && showMainWorkout ? SHOULDER_EXTRA.length : 0;
+  const listedExerciseStepCount =
+    currentProgram.length + shoulderExtraStepCount + currentFaceNeckProgram.length;
 
   /** นับความครบ: ไม่รวม warm-up ยิม · รวมท่าหน้า–คอทุกท่า */
   const completionDayIds = [
@@ -1635,6 +1664,8 @@ export default function App() {
                   completedIds={completedIdsCurrent}
                   onToggle={toggleTrainingDone}
                   trainingPlace={trainingPlace}
+                  startStep={1}
+                  totalSteps={listedExerciseStepCount}
                 />
                 {trainingAllDone && (
                   <div className="pt-2 border-t border-white/10 space-y-2">
@@ -1736,9 +1767,14 @@ export default function App() {
 
                 <p className="text-slate-400 text-xs uppercase tracking-wider px-1">
                   วันนี้: {currentProgramLabel} · {trainingPlace === 'gym' ? 'ท่าที่ยิม' : 'ท่าทดแทนที่บ้าน'}
+                  {listedExerciseStepCount > 0 && (
+                    <span className="text-slate-500 normal-case"> · ลำดับ 1–{listedExerciseStepCount}</span>
+                  )}
                 </p>
 
-                {currentProgram.map((ex) => {
+                {currentProgram.map((ex, index) => {
+              const stepNum = index + 1;
+              const stepVariant = trainingMode === TRAINING_MODE_SPLIT ? 'split' : 'default';
               const name = trainingPlace === 'gym' ? ex.nameGym : ex.nameHome;
               const done = completedIdsCurrent[ex.id];
               const repDisplay = ex.unit ? `${ex.reps} ${ex.unit}` : ex.reps;
@@ -1756,8 +1792,9 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => toggleTrainingDone(ex.id)}
-                    className="flex w-full min-w-0 items-start gap-3 text-left active:scale-[0.99]"
+                    className="flex w-full min-w-0 items-start gap-2.5 text-left active:scale-[0.99]"
                   >
+                    <ExerciseStepBadge step={stepNum} total={listedExerciseStepCount} variant={stepVariant} />
                     {done ? (
                       <Check className="w-6 h-6 text-emerald-400 shrink-0 rounded-full bg-emerald-400/20 p-1 mt-0.5" />
                     ) : (
@@ -1770,6 +1807,13 @@ export default function App() {
                       <p
                         className={`font-medium text-sm leading-snug break-words ${done ? 'text-slate-500 line-through' : 'text-slate-100'}`}
                       >
+                        <span
+                          className={`font-semibold tabular-nums ${
+                            trainingMode === TRAINING_MODE_SPLIT ? 'text-violet-400/85' : 'text-cyan-400/85'
+                          }`}
+                        >
+                          {stepNum}.
+                        </span>{' '}
                         {name}
                       </p>
                       <p className="text-slate-400 text-xs mt-1 leading-relaxed break-words">
@@ -1903,7 +1947,8 @@ export default function App() {
                     <Sparkles className="w-4 h-4" />
                     พิเศษ: โฟกัสหัวไหล่ให้กว้าง
                   </p>
-                  {SHOULDER_EXTRA.map((ex) => {
+                  {SHOULDER_EXTRA.map((ex, index) => {
+                    const stepNum = currentProgram.length + index + 1;
                     const name = trainingPlace === 'gym' ? ex.nameGym : ex.nameHome;
                     const done = completedIdsCurrent[ex.id];
                     const inputUnit = ex.inputUnit || 'kg';
@@ -1919,8 +1964,9 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => toggleTrainingDone(ex.id)}
-                          className="flex w-full min-w-0 items-start gap-3 text-left active:scale-[0.99]"
+                          className="flex w-full min-w-0 items-start gap-2.5 text-left active:scale-[0.99]"
                         >
+                          <ExerciseStepBadge step={stepNum} total={listedExerciseStepCount} variant="amber" />
                           {done ? (
                             <Check className="w-6 h-6 text-emerald-400 shrink-0 rounded-full bg-emerald-400/20 p-1 mt-0.5" />
                           ) : (
@@ -1930,7 +1976,7 @@ export default function App() {
                             <p
                               className={`font-medium text-sm leading-snug break-words ${done ? 'text-slate-500 line-through' : 'text-slate-100'}`}
                             >
-                              {name}
+                              <span className="text-amber-400/85 font-semibold tabular-nums">{stepNum}.</span> {name}
                             </p>
                             <p className="text-slate-400 text-xs mt-1 leading-relaxed break-words">
                               {ex.sets} เซต · {ex.reps} {ex.unit}
@@ -2026,6 +2072,8 @@ export default function App() {
                     completedIds={completedIdsCurrent}
                     onToggle={toggleTrainingDone}
                     trainingPlace={trainingPlace}
+                    startStep={currentProgram.length + 1}
+                    totalSteps={listedExerciseStepCount}
                   />
                 )}
 
