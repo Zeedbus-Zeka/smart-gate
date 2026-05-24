@@ -284,6 +284,9 @@ const getSplitDayLabel = (day) =>
 
 // ==========================================
 // 🙂 บริหารหน้า–คอ (กันหย่อน) — โหมดเฉพาะจุด
+// ออกแบบ: ชาย ~55 ป. · ~56 กก. · 165 ซม. (เอเซีย)
+// หลัก: ท่าทางคอ (chin tuck ทุกวัน) + ยืดเบา + กล้ามรอบปาก/ใต้คางเบา
+// ไม่เกิน 5 ท่า/วัน · ปริมาณต่ำกว่างานวิจัยหญิงวัยกลางคน (ลดความเสี่ยง TMJ/เวียนคอ)
 // ==========================================
 const FACE_NECK_EXERCISES = {
   fn_nk_1: {
@@ -291,132 +294,91 @@ const FACE_NECK_EXERCISES = {
     nameGym: 'Chin tuck — ดึงหัวถอยหลัง (คางสองชั้น ไม่ก้มคอ)',
     nameHome: 'Chin tuck — ดึงหัวถอยหลัง (คางสองชั้น ไม่ก้มคอ)',
     sets: 2,
-    reps: '10',
+    reps: '8',
     unit: 'ครั้ง · ค้าง 5 วิ',
-    badge: 'คอ',
+    badge: 'คอ · ท่าทาง',
     searchKey: 'chin tuck exercise proper form',
     searchKeyHome: 'chin tuck exercise at home',
   },
   fn_nk_2: {
     id: 'fn_nk_2',
-    nameGym: 'ยืดกล้ามคอด้านข้าง (SCM)',
-    nameHome: 'ยืดกล้ามคอด้านข้าง (SCM)',
-    sets: 2,
-    reps: '20-30',
+    nameGym: 'ยืดกล้ามคอด้านข้าง (SCM) นั่งตรง',
+    nameHome: 'ยืดกล้ามคอด้านข้าง (SCM) นั่งตรง',
+    sets: 1,
+    reps: '20',
     unit: 'วิ/ข้าง',
-    badge: 'คอ',
+    badge: 'คอ · ยืด',
     searchKey: 'sternocleidomastoid stretch seated',
     searchKeyHome: 'neck side stretch at home',
   },
   fn_nk_3: {
     id: 'fn_nk_3',
-    nameGym: 'ยืดท้ายทอย / สะบักบนเบา',
-    nameHome: 'ยืดท้ายทอย / สะบักบนเบา',
-    sets: 2,
-    reps: '20-30',
-    unit: 'วิ',
-    badge: 'คอ',
+    nameGym: 'ยืดท้ายทอย / สะบักบน (มือจับเก้าอี้)',
+    nameHome: 'ยืดท้ายทอย / สะบักบน (มือจับเก้าอี้)',
+    sets: 1,
+    reps: '20',
+    unit: 'วิ/ข้าง',
+    badge: 'คอ · ยืด',
     searchKey: 'upper trapezius stretch chair',
     searchKeyHome: 'neck stretch upper trapezius home',
   },
-  fn_nk_4: {
-    id: 'fn_nk_4',
-    nameGym: 'เปิด–ปากช้า ๆ (ประสานคอเบา)',
-    nameHome: 'เปิด–ปากช้า ๆ (ประสานคอเบา)',
-    sets: 1,
-    reps: '10-15',
-    unit: 'ครั้ง ช้า ๆ',
-    badge: 'คอ',
-    searchKey: 'jaw opening exercise neck coordination',
-    searchKeyHome: 'jaw neck mobility exercise home',
-  },
   fn_fc_1: {
     id: 'fn_fc_1',
-    nameGym: 'ยิ้มกดริมฝีปาก (Lip press smile)',
-    nameHome: 'ยิ้มกดริมฝีปาก (Lip press smile)',
+    nameGym: 'ยิ้มกดริมฝีปาก (Lip press) — ไม่บีบฟัน',
+    nameHome: 'ยิ้มกดริมฝีปาก (Lip press) — ไม่บีบฟัน',
     sets: 2,
-    reps: '10',
-    unit: 'ครั้ง · ค้าง 10 วิ',
-    badge: 'ใบหน้า',
-    searchKey: 'lip press smile facial exercise',
-    searchKeyHome: 'lip press exercise face yoga',
+    reps: '8',
+    unit: 'ครั้ง · ค้าง 8 วิ',
+    badge: 'รอบปาก',
+    searchKey: 'lip press smile facial exercise men',
+    searchKeyHome: 'lip press exercise face',
   },
   fn_fc_2: {
     id: 'fn_fc_2',
-    nameGym: 'ปลา (Fish face) — ดูดแก้ม',
-    nameHome: 'ปลา (Fish face) — ดูดแก้ม',
+    nameGym: 'ดูดแก้มเบา (Fish face)',
+    nameHome: 'ดูดแก้มเบา (Fish face)',
     sets: 2,
-    reps: '10',
-    unit: 'ครั้ง · ค้าง 5-10 วิ',
-    badge: 'ใบหน้า',
-    searchKey: 'fish face exercise cheeks',
+    reps: '8',
+    unit: 'ครั้ง · ค้าง 5 วิ',
+    badge: 'แก้ม',
+    searchKey: 'fish face exercise cheeks gentle',
     searchKeyHome: 'fish face facial exercise',
-  },
-  fn_fc_3: {
-    id: 'fn_fc_3',
-    nameGym: 'ยกแก้ม (Cheek lift)',
-    nameHome: 'ยกแก้ม (Cheek lift)',
-    sets: 2,
-    reps: '10',
-    unit: 'ครั้ง/ข้าง',
-    badge: 'ใบหน้า',
-    searchKey: 'cheek lift facial exercise',
-    searchKeyHome: 'cheek lift exercise face yoga',
-  },
-  fn_fc_4: {
-    id: 'fn_fc_4',
-    nameGym: 'หลับตา + ยกคิ้ว',
-    nameHome: 'หลับตา + ยกคิ้ว',
-    sets: 2,
-    reps: '10',
-    unit: 'ครั้ง',
-    badge: 'ใบหน้า',
-    searchKey: 'forehead exercise anti aging face',
-    searchKeyHome: 'forehead lift facial exercise',
-  },
-  fn_fc_5: {
-    id: 'fn_fc_5',
-    nameGym: 'อ้าปาก O → ยิ้มแคบ',
-    nameHome: 'อ้าปาก O → ยิ้มแคบ',
-    sets: 2,
-    reps: '10',
-    unit: 'ครั้ง',
-    badge: 'ใบหน้า',
-    searchKey: 'facial exercise O mouth smile',
-    searchKeyHome: 'face yoga mouth exercise',
   },
   fn_fc_6: {
     id: 'fn_fc_6',
-    nameGym: 'ลิ้นแตะเพดาน + ยิ้มเบา (ใต้คาง)',
-    nameHome: 'ลิ้นแตะเพดาน + ยิ้มเบา (ใต้คาง)',
+    nameGym: 'ลิ้นแตะเพดาน + ยกคางเบา (ใต้คาง)',
+    nameHome: 'ลิ้นแตะเพดาน + ยกคางเบา (ใต้คาง)',
     sets: 2,
-    reps: '10',
-    unit: 'ครั้ง · ค้าง 10 วิ',
-    badge: 'ใบหน้า',
-    searchKey: 'tongue to palate mewing exercise',
+    reps: '8',
+    unit: 'ครั้ง · ค้าง 8 วิ',
+    badge: 'ใต้คาง',
+    searchKey: 'tongue to palate chin exercise',
     searchKeyHome: 'tongue posture exercise jawline',
   },
 };
 
-const FN_NECK_IDS = ['fn_nk_1', 'fn_nk_2', 'fn_nk_3', 'fn_nk_4'];
-const FN_FACE_IDS = ['fn_fc_1', 'fn_fc_2', 'fn_fc_3', 'fn_fc_4', 'fn_fc_5', 'fn_fc_6'];
-const FN_FULL_IDS = [...FN_NECK_IDS, ...FN_FACE_IDS];
-
-/** ท่าหน้า–คอตามวัน 1–7 (จ–อา) */
+/**
+ * ท่าหน้า–คอตามวัน 1–7 (จ–อา) · สูงสุด 5 ท่า/วัน
+ * 1 อก: คอตรงหลังยก | 2 ไหล่: ชุดท่าทางเต็ม | 3 พัก: คอ+ใต้คาง
+ * 4 หลัง | 5 แขน (สั้น) | 6 รอบเบา (น้อย) | 7 ขา+หน้าเบา
+ */
 const SPLIT_FACE_NECK_IDS_BY_DAY = {
-  1: ['fn_nk_1'],
-  2: FN_FULL_IDS,
-  3: FN_FULL_IDS,
-  4: ['fn_nk_1'],
-  5: ['fn_nk_1', 'fn_fc_1', 'fn_fc_2', 'fn_fc_6'],
-  6: ['fn_nk_1'],
-  7: ['fn_nk_1', ...FN_FACE_IDS],
+  1: ['fn_nk_1', 'fn_nk_3', 'fn_fc_6'],
+  2: ['fn_nk_1', 'fn_nk_2', 'fn_nk_3', 'fn_fc_1', 'fn_fc_2'],
+  3: ['fn_nk_1', 'fn_nk_2', 'fn_nk_3', 'fn_fc_1', 'fn_fc_6'],
+  4: ['fn_nk_1', 'fn_nk_2', 'fn_fc_6'],
+  5: ['fn_nk_1', 'fn_fc_1', 'fn_fc_6'],
+  6: ['fn_nk_1', 'fn_nk_3'],
+  7: ['fn_nk_1', 'fn_nk_2', 'fn_fc_1', 'fn_fc_6'],
 };
+
+const FACE_NECK_MAX_PER_DAY = 5;
 
 const getFaceNeckProgramForSplitDay = (day) => {
   const ids = SPLIT_FACE_NECK_IDS_BY_DAY[day];
-  if (!ids) return [];
-  return ids.map((id) => FACE_NECK_EXERCISES[id]).filter(Boolean);
+  if (!ids?.length) return [];
+  const list = ids.map((id) => FACE_NECK_EXERCISES[id]).filter(Boolean);
+  return list.slice(0, FACE_NECK_MAX_PER_DAY);
 };
 
 const isFaceNeckExerciseId = (id) => /^fn_/.test(id);
@@ -581,7 +543,7 @@ function FaceNeckExerciseList({ exercises, completedIds, onToggle, trainingPlace
           บริหารหน้าและคอ (กันหย่อน)
         </p>
         <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">
-          ทำช้า ๆ ไม่เจ็บ · ไม่บีบฟัน · แตะ YouTube / ภาพ ดูท่าก่อนทำ
+          ชาย ~55 ป. · เน้นคอตรง + กล้ามเบา · ไม่เกิน 5 ท่า/วัน · ช้า ๆ ไม่เจ็บ ไม่บีบฟัน
         </p>
       </div>
       {exercises.map((ex, index) => {
@@ -1529,7 +1491,7 @@ export default function App() {
                       })}
                     </div>
                     <ul className="mt-2 space-y-1.5 text-slate-400 text-[11px] leading-relaxed list-disc list-inside">
-                      <li>ทุกวันฝึกมีท่าท้อง + บริหารหน้า–คอ (กันหย่อน) · พุธ = พักยิม + หน้า–คอเต็มชุด</li>
+                      <li>บริหารหน้า–คอ ≤5 ท่า/วัน (chin tuck เกือบทุกวัน) · พุธ = พักยิม + ชุดคอเต็ม</li>
                       <li>วัน 6 รอบเบา = ซ้อนความถี่อก/หลัง/ไหล่ (เบากว่าวันหนัก)</li>
                       <li>วัน 7 ขา = วันขาแยก · วัน 3 พุธ = พักเต็ม</li>
                       <li>วัน 2 ไหล่ = เน้นไหล่กว้าง + ท่าทางเครื่องแบบ</li>
