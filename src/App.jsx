@@ -16,11 +16,22 @@ const MAX_DISTANCE_METERS = 100;
 // ==========================================
 // 👨‍👩‍👧‍👦 ฐานข้อมูลสมาชิก
 // ==========================================
+const PROGRAM_KEY_ATHLETE_4DAY = 'athlete_4day';
+
 const FAMILY_MEMBERS = {
   '1111': { name: 'ป๋าเอส (Admin)', role: 'dad' },
   '2222': { name: 'ลูกคนที่ 1', role: 'kid' },
   '3333': { name: 'ลูกคนที่ 2', role: 'kid' },
+  '4444': {
+    name: 'ลูกคนที่ 3',
+    role: 'kid',
+    programKey: PROGRAM_KEY_ATHLETE_4DAY,
+    profile: { age: 21, sex: 'male', heightCm: 187, weightKg: 70, sport: 'บาสเกตบอล' },
+  },
 };
+
+const getUserProgramKey = (user) => user?.programKey || 'dad_default';
+const isAthleteProgramUser = (user) => getUserProgramKey(user) === PROGRAM_KEY_ATHLETE_4DAY;
 
 const TABS = [
   { id: 'smarthome', label: 'SmartHome', icon: Home },
@@ -61,6 +72,7 @@ const SHOULDER_EXTRA = [
 // ==========================================
 const TRAINING_MODE_HYBRID = 'hybrid';
 const TRAINING_MODE_SPLIT = 'split';
+const TRAINING_MODE_ATHLETE = 'athlete';
 
 const SPLIT_SCHEDULE_DAYS = 7;
 /** วันพัก = พุธ = ปุ่ม/แถวที่ 3 */
@@ -153,8 +165,14 @@ const SPLIT_WEEKLY_CALENDAR = SPLIT_WEEKDAY_NAMES.map((weekday, i) => ({
 
 function PostWorkoutGuide({ guide, title = 'หลังจบวันนี้ (cool-down)', accent = 'emerald' }) {
   if (!guide) return null;
-  const border = accent === 'violet' ? 'border-violet-400/25 bg-violet-500/10' : 'border-emerald-400/25 bg-emerald-500/10';
-  const label = accent === 'violet' ? 'text-violet-300' : 'text-emerald-300';
+  const border =
+    accent === 'violet'
+      ? 'border-violet-400/25 bg-violet-500/10'
+      : accent === 'orange'
+        ? 'border-orange-400/25 bg-orange-500/10'
+        : 'border-emerald-400/25 bg-emerald-500/10';
+  const label =
+    accent === 'violet' ? 'text-violet-300' : accent === 'orange' ? 'text-orange-300' : 'text-emerald-300';
   const rows = [
     { Icon: Footprints, label: 'เดินเบา', value: guide.walk },
     { Icon: Activity, label: 'ยืดเบา', value: guide.stretch },
@@ -383,6 +401,66 @@ const getFaceNeckProgramForSplitDay = (day) => {
 
 const isFaceNeckExerciseId = (id) => /^fn_/.test(id);
 
+// ==========================================
+// 🏀 แผนลูกคนที่ 3: 4 วัน/สัปดาห์ · อก·หลัง·ไหล่·ขา
+// ชาย 21 ป. · 187 ซม. · 70 กก. · นักบาส · สร้างกล้าม/หุ่นดี
+// ==========================================
+const ATHLETE_SCHEDULE_DAYS = 4;
+const ATHLETE_DAY_LABELS = ['อก', 'หลัง', 'ไหล่', 'ขา'];
+const ATHLETE_WEEKDAY_NAMES = ['จันทร์', 'อังคาร', 'พฤหัส', 'ศุกร์'];
+const ATHLETE_PROTEIN_HINT =
+  'โปรตีน ~130–150 กรัม/วัน (70 กก. · ~1.9–2.1 กก./kg · สร้างกล้าม + ฟื้นจากบาส)';
+
+const ATHLETE_DAY_CHEST = [
+  { id: 'ath_ch_0', nameGym: 'Warm-up: ปั่น/เดินชัน + แกว่งแขน 8–10 นาที', nameHome: 'Jumping jacks · แกว่งแขน 5–8 นาที', sets: 1, reps: '-', unit: '', searchKey: 'chest day warm up basketball', searchKeyHome: 'dynamic warm up upper body' },
+  { id: 'ath_ch_1', nameGym: 'Barbell / Smith Bench Press', nameHome: 'Push-up มาตรฐาน / ดันพื้น', sets: 4, reps: '8-12', unit: 'ครั้ง', badge: 'อกหลัก', searchKey: 'bench press form barbell', searchKeyHome: 'push up chest form' },
+  { id: 'ath_ch_2', nameGym: 'Incline Dumbbell Press', nameHome: 'Decline push-up / ดันเอียง', sets: 3, reps: '10-12', unit: 'ครั้ง', searchKey: 'incline dumbbell press', searchKeyHome: 'decline push up chest' },
+  { id: 'ath_ch_3', nameGym: 'Cable / Dumbbell Fly', nameHome: 'Fly ยาง/ขวด', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'cable chest fly', searchKeyHome: 'resistance band chest fly' },
+  { id: 'ath_ab_1', nameGym: 'Plank แกนกลาง', nameHome: 'Plank', sets: 3, reps: '45', unit: 'วินาที', inputUnit: 's', badge: 'แกนกลาง', searchKey: 'plank abs form', searchKeyHome: 'plank hold home' },
+];
+
+const ATHLETE_DAY_BACK = [
+  { id: 'ath_bk_0', nameGym: 'Warm-up: ดึงแถบบน · แกว่งหลัง 5–8 นาที', nameHome: 'Cat-cow · Superman เบา', sets: 1, reps: '-', unit: '', searchKey: 'back workout warm up', searchKeyHome: 'back warm up home' },
+  { id: 'ath_bk_1', nameGym: 'Lat Pulldown', nameHome: 'ดึงยาง/ถุง lat', sets: 4, reps: '10-12', unit: 'ครั้ง', badge: 'หลังหลัก', searchKey: 'lat pulldown form', searchKeyHome: 'resistance band pulldown' },
+  { id: 'ath_bk_2', nameGym: 'Seated Cable Row / Barbell Row', nameHome: 'Row กระเป๋า / ดึงยาง', sets: 4, reps: '10-12', unit: 'ครั้ง', searchKey: 'seated cable row form', searchKeyHome: 'bent over row backpack' },
+  { id: 'ath_bk_3', nameGym: 'Face Pull', nameHome: 'ดึงยางหน้าผาก', sets: 3, reps: '15-20', unit: 'ครั้ง', badge: 'ท่าทาง', searchKey: 'face pull cable', searchKeyHome: 'band face pull' },
+  { id: 'ath_bk_4', nameGym: 'Back Extension (เบา)', nameHome: 'Superman hold', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'back extension hyperextension', searchKeyHome: 'superman exercise back' },
+];
+
+const ATHLETE_DAY_SHOULDERS = [
+  { id: 'ath_sh_0', nameGym: 'Warm-up: แกว่งแขน · ยางดึงเบา 5–8 นาที', nameHome: 'Arm circles · ยางเบา', sets: 1, reps: '-', unit: '', searchKey: 'shoulder warm up gym', searchKeyHome: 'shoulder warm up band' },
+  { id: 'ath_sh_1', nameGym: 'Dumbbell Shoulder Press', nameHome: 'Pike push-up / ดันไหล่', sets: 4, reps: '8-12', unit: 'ครั้ง', badge: 'ไหล่หลัก', searchKey: 'dumbbell shoulder press', searchKeyHome: 'pike push up shoulders' },
+  { id: 'ath_sh_2', nameGym: 'Lateral Raise', nameHome: 'ยกขวดด้านข้าง', sets: 4, reps: '12-15', unit: 'ครั้ง', badge: 'ไหล่กว้าง', searchKey: 'lateral raise dumbbell', searchKeyHome: 'lateral raise water bottles' },
+  { id: 'ath_sh_3', nameGym: 'Rear Delt Fly', nameHome: 'ดึงยางแยกสะบัก', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'rear delt fly', searchKeyHome: 'band rear delt fly' },
+  { id: 'ath_sh_4', nameGym: 'Shrugs (Trap) เบา', nameHome: 'ยกไหล่ไร้น้ำหนัก', sets: 3, reps: '12-15', unit: 'ครั้ง', searchKey: 'dumbbell shrug form', searchKeyHome: 'shoulder shrug bodyweight' },
+];
+
+const ATHLETE_DAY_LEGS = [
+  { id: 'ath_lg_0', nameGym: 'Warm-up: ปั่นเบา · สควอตไม่มีน้ำหนัก 5–8 นาที', nameHome: 'ย่ำเท้า · สควอตเปล่า', sets: 1, reps: '-', unit: '', searchKey: 'leg day warm up squat', searchKeyHome: 'bodyweight squat warm up' },
+  { id: 'ath_lg_1', nameGym: 'Back Squat / Goblet Squat', nameHome: 'Goblet squat ขวด/ดัมเบล', sets: 4, reps: '8-12', unit: 'ครั้ง', badge: 'ขาหลัก', searchKey: 'back squat form barbell', searchKeyHome: 'goblet squat form' },
+  { id: 'ath_lg_2', nameGym: 'Romanian Deadlift (RDL)', nameHome: 'RDL ดัมเบล/ขวด', sets: 3, reps: '10-12', unit: 'ครั้ง', searchKey: 'romanian deadlift dumbbell', searchKeyHome: 'rdl dumbbell home' },
+  { id: 'ath_lg_3', nameGym: 'Leg Press / Walking Lunge', nameHome: 'Lunge สลับขา', sets: 3, reps: '10-12', unit: 'ครั้ง/ข้าง', searchKey: 'leg press machine form', searchKeyHome: 'walking lunges form' },
+  { id: 'ath_lg_4', nameGym: 'Standing Calf Raise', nameHome: 'ยกส้นเท้าขั้นบันได', sets: 4, reps: '15-20', unit: 'ครั้ง', badge: 'น่อง · กระโดด', searchKey: 'standing calf raise', searchKeyHome: 'calf raises stairs' },
+];
+
+const ATHLETE_PROGRAM_BY_DAY = [ATHLETE_DAY_CHEST, ATHLETE_DAY_BACK, ATHLETE_DAY_SHOULDERS, ATHLETE_DAY_LEGS];
+
+const ATHLETE_POST_WORKOUT = {
+  walk: 'เดินเบา/ปั่นเบา 5–8 นาที (cool-down)',
+  stretch: 'ยืดขา · สะโพก · ไหล่ · ~3–5 นาที',
+  waterAfter: '500–700 ml ภายใน 30 นาทีหลังยก',
+  proteinAfter: 'เวย์ 1 สคูป (~25–30 กรัม) · ภายใน ~30 นาที · มื้อหลักตามปกติ',
+  proteinDaily: ATHLETE_PROTEIN_HINT,
+};
+
+const getAthleteProgramForDay = (day) => {
+  if (day < 1 || day > ATHLETE_SCHEDULE_DAYS) return [];
+  return ATHLETE_PROGRAM_BY_DAY[day - 1] || [];
+};
+const getAthleteDayLabel = (day) => (day >= 1 && day <= ATHLETE_SCHEDULE_DAYS ? ATHLETE_DAY_LABELS[day - 1] : '');
+const getAthleteDayExerciseIds = (day) => getAthleteProgramForDay(day).map((e) => e.id);
+const isAthleteWorkoutDay = (day) => day >= 1 && day <= ATHLETE_SCHEDULE_DAYS;
+
 const TRAINING_STORAGE_KEY_PREFIX = 'smartgate_training';
 const getTrainingStorageKey = (userId) => (userId ? `${TRAINING_STORAGE_KEY_PREFIX}_${userId}` : null);
 
@@ -403,27 +481,51 @@ function applyTrainingStoragePayload(data, setters) {
   const today = todayKey();
   if (data.day >= 1 && data.day <= 7) {
     const day =
-      data.trainingMode === TRAINING_MODE_SPLIT ? migrateLegacySplitTrainingDay(data.day) : data.day;
+      data.trainingMode === TRAINING_MODE_SPLIT
+        ? migrateLegacySplitTrainingDay(data.day)
+        : data.trainingMode === TRAINING_MODE_ATHLETE
+          ? Math.min(data.day, ATHLETE_SCHEDULE_DAYS)
+          : data.day;
     setTrainingDay(day);
   }
   if (data.place === 'gym' || data.place === 'home') setTrainingPlace(data.place);
-  if (data.trainingMode === TRAINING_MODE_HYBRID || data.trainingMode === TRAINING_MODE_SPLIT) {
+  if (
+    data.trainingMode === TRAINING_MODE_HYBRID ||
+    data.trainingMode === TRAINING_MODE_SPLIT ||
+    data.trainingMode === TRAINING_MODE_ATHLETE
+  ) {
     setTrainingMode(data.trainingMode);
   }
   if (data.completedIds && typeof data.completedIds === 'object') {
-    if (data.completedIds.hybrid !== undefined || data.completedIds.split !== undefined) {
+    if (
+      data.completedIds.hybrid !== undefined ||
+      data.completedIds.split !== undefined ||
+      data.completedIds.athlete !== undefined
+    ) {
       setTrainingCompletedIds({
         hybrid: typeof data.completedIds.hybrid === 'object' ? data.completedIds.hybrid : {},
         split: typeof data.completedIds.split === 'object' ? data.completedIds.split : {},
+        athlete: typeof data.completedIds.athlete === 'object' ? data.completedIds.athlete : {},
       });
     } else {
       const keys = Object.keys(data.completedIds);
+      const hasAthleteIds = keys.some((k) => k.startsWith('ath_'));
       const hasSplitIds = keys.some((k) => k.startsWith('sp_') || k.startsWith('fn_'));
       setTrainingCompletedIds(
-        hasSplitIds ? { hybrid: {}, split: data.completedIds } : { hybrid: data.completedIds, split: {} }
+        hasAthleteIds
+          ? { hybrid: {}, split: {}, athlete: data.completedIds }
+          : hasSplitIds
+            ? { hybrid: {}, split: data.completedIds, athlete: {} }
+            : { hybrid: data.completedIds, split: {}, athlete: {} }
       );
     }
   }
+  const athleteDates = (src) => ({
+    1: /^\d{4}-\d{2}-\d{2}$/.test(src?.[1]) ? src[1] : today,
+    2: /^\d{4}-\d{2}-\d{2}$/.test(src?.[2]) ? src[2] : today,
+    3: /^\d{4}-\d{2}-\d{2}$/.test(src?.[3]) ? src[3] : today,
+    4: /^\d{4}-\d{2}-\d{2}$/.test(src?.[4]) ? src[4] : today,
+  });
   if (data.sessionDateByDay && typeof data.sessionDateByDay === 'object') {
     if (data.sessionDateByDay.hybrid && data.sessionDateByDay.split) {
       setSessionDateByDay({
@@ -441,6 +543,7 @@ function applyTrainingStoragePayload(data, setters) {
           6: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[6]) ? data.sessionDateByDay.split[6] : today,
           7: /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDateByDay.split[7]) ? data.sessionDateByDay.split[7] : today,
         },
+        athlete: athleteDates(data.sessionDateByDay.athlete),
       });
     } else {
       const o = data.sessionDateByDay;
@@ -451,12 +554,14 @@ function applyTrainingStoragePayload(data, setters) {
           3: /^\d{4}-\d{2}-\d{2}$/.test(o[3]) ? o[3] : today,
         },
         split: { 1: today, 2: today, 3: today, 4: today, 5: today, 6: today, 7: today },
+        athlete: athleteDates(),
       });
     }
   } else if (data.sessionDate && /^\d{4}-\d{2}-\d{2}$/.test(data.sessionDate)) {
     setSessionDateByDay({
       hybrid: { 1: data.sessionDate, 2: data.sessionDate, 3: data.sessionDate },
       split: { 1: today, 2: today, 3: today, 4: today, 5: today, 6: today, 7: today },
+      athlete: athleteDates(),
     });
   }
   if (data.weightHistory && typeof data.weightHistory === 'object') setWeightHistory(data.weightHistory);
@@ -518,6 +623,7 @@ function ExerciseStepBadge({ step, total, variant = 'default' }) {
     split: 'border-violet-400/45 bg-violet-500/15 text-violet-300',
     amber: 'border-amber-400/45 bg-amber-500/15 text-amber-300',
     rose: 'border-rose-400/45 bg-rose-500/15 text-rose-300',
+    orange: 'border-orange-400/45 bg-orange-500/15 text-orange-300',
   }[variant] || 'border-cyan-400/45 bg-cyan-500/15 text-cyan-300';
   return (
     <div className="flex flex-col items-center shrink-0 w-9" title={total ? `ท่าที่ ${step} จาก ${total}` : `ท่าที่ ${step}`}>
@@ -725,12 +831,14 @@ export default function App() {
   const [trainingCompletedIds, setTrainingCompletedIds] = useState(() => ({
     hybrid: {},
     split: {},
+    athlete: {},
   }));
   const [sessionDateByDay, setSessionDateByDay] = useState(() => {
     const t = todayKey();
     return {
       hybrid: { 1: t, 2: t, 3: t },
       split: { 1: t, 2: t, 3: t, 4: t, 5: t, 6: t, 7: t },
+      athlete: { 1: t, 2: t, 3: t, 4: t },
     };
   });
   const [weightHistory, setWeightHistory] = useState({});
@@ -743,15 +851,29 @@ export default function App() {
   const cloudBannerClearRef = useRef(null);
   const cloudUpsertTimerRef = useRef(null);
 
+  const userIsAthlete = isAthleteProgramUser(user);
+
+  useEffect(() => {
+    if (!user) return;
+    if (userIsAthlete) {
+      setTrainingMode(TRAINING_MODE_ATHLETE);
+      setTrainingDay((d) => (d >= 1 && d <= ATHLETE_SCHEDULE_DAYS ? d : 1));
+    }
+  }, [user?.id, userIsAthlete]);
+
   const completedIdsCurrent = trainingCompletedIds[trainingMode] || {};
   const currentSessionDate =
     trainingMode === TRAINING_MODE_HYBRID
       ? trainingDay >= 1 && trainingDay <= 3
         ? sessionDateByDay.hybrid[trainingDay] || todayKey()
         : null
-      : trainingDay >= 1 && trainingDay <= SPLIT_SCHEDULE_DAYS
-        ? sessionDateByDay.split[trainingDay] || todayKey()
-        : null;
+      : trainingMode === TRAINING_MODE_ATHLETE
+        ? trainingDay >= 1 && trainingDay <= ATHLETE_SCHEDULE_DAYS
+          ? sessionDateByDay.athlete?.[trainingDay] || todayKey()
+          : null
+        : trainingDay >= 1 && trainingDay <= SPLIT_SCHEDULE_DAYS
+          ? sessionDateByDay.split[trainingDay] || todayKey()
+          : null;
 
   useEffect(() => {
     if (!plankTimer.open || !plankTimer.running || plankTimer.paused) return undefined;
@@ -846,38 +968,49 @@ export default function App() {
   }, [user]);
 
   const currentFaceNeckProgram =
-    trainingMode === TRAINING_MODE_SPLIT ? getFaceNeckProgramForSplitDay(trainingDay) : [];
+    trainingMode === TRAINING_MODE_SPLIT && !userIsAthlete ? getFaceNeckProgramForSplitDay(trainingDay) : [];
   const currentFaceNeckIds = currentFaceNeckProgram.map((e) => e.id);
 
   const currentProgram =
-    trainingMode === TRAINING_MODE_HYBRID
-      ? getProgramForWeekDay(trainingWeek, trainingDay)
-      : getSplitProgramForDay(trainingDay);
+    trainingMode === TRAINING_MODE_ATHLETE
+      ? getAthleteProgramForDay(trainingDay)
+      : trainingMode === TRAINING_MODE_HYBRID
+        ? getProgramForWeekDay(trainingWeek, trainingDay)
+        : getSplitProgramForDay(trainingDay);
   const currentProgramLabel =
-    trainingMode === TRAINING_MODE_HYBRID
-      ? getPlanForDay(trainingWeek, trainingDay)
-        ? `Program ${getPlanForDay(trainingWeek, trainingDay)}`
-        : ''
-      : trainingDay >= 1 && trainingDay <= SPLIT_SCHEDULE_DAYS
-        ? `เฉพาะจุด · ${getSplitDayLabel(trainingDay)}`
-        : '';
+    trainingMode === TRAINING_MODE_ATHLETE
+      ? `นักบาส · ${getAthleteDayLabel(trainingDay)}`
+      : trainingMode === TRAINING_MODE_HYBRID
+        ? getPlanForDay(trainingWeek, trainingDay)
+          ? `Program ${getPlanForDay(trainingWeek, trainingDay)}`
+          : ''
+        : trainingDay >= 1 && trainingDay <= SPLIT_SCHEDULE_DAYS
+          ? `เฉพาะจุด · ${getSplitDayLabel(trainingDay)}`
+          : '';
 
   const mainDayIds =
-    trainingMode === TRAINING_MODE_HYBRID
-      ? getCurrentDayExerciseIds(trainingWeek, trainingDay)
-      : isSplitWorkoutDay(trainingDay)
-        ? getSplitDayExerciseIds(trainingDay)
-        : [];
+    trainingMode === TRAINING_MODE_ATHLETE
+      ? getAthleteDayExerciseIds(trainingDay)
+      : trainingMode === TRAINING_MODE_HYBRID
+        ? getCurrentDayExerciseIds(trainingWeek, trainingDay)
+        : isSplitWorkoutDay(trainingDay)
+          ? getSplitDayExerciseIds(trainingDay)
+          : [];
   const currentDayIds = [...mainDayIds, ...currentFaceNeckIds];
 
   const showSplitFaceNeckOnly =
-    trainingMode === TRAINING_MODE_SPLIT && isSplitRestDay(trainingDay) && currentFaceNeckProgram.length > 0;
+    !userIsAthlete &&
+    trainingMode === TRAINING_MODE_SPLIT &&
+    isSplitRestDay(trainingDay) &&
+    currentFaceNeckProgram.length > 0;
   const showMainWorkout =
-    (trainingMode === TRAINING_MODE_HYBRID && trainingDay !== 4) ||
-    (trainingMode === TRAINING_MODE_SPLIT && isSplitWorkoutDay(trainingDay));
+    trainingMode === TRAINING_MODE_ATHLETE
+      ? isAthleteWorkoutDay(trainingDay)
+      : (trainingMode === TRAINING_MODE_HYBRID && trainingDay !== 4) ||
+        (trainingMode === TRAINING_MODE_SPLIT && isSplitWorkoutDay(trainingDay));
 
   const shoulderExtraStepCount =
-    trainingMode === TRAINING_MODE_HYBRID && showMainWorkout ? SHOULDER_EXTRA.length : 0;
+    !userIsAthlete && trainingMode === TRAINING_MODE_HYBRID && showMainWorkout ? SHOULDER_EXTRA.length : 0;
   const listedExerciseStepCount =
     currentProgram.length + shoulderExtraStepCount + currentFaceNeckProgram.length;
 
@@ -1048,6 +1181,7 @@ export default function App() {
   const saveSessionRecord = () => {
     if (!currentSessionDate) return;
     if (trainingMode === TRAINING_MODE_HYBRID && trainingDay === 4) return;
+    if (trainingMode === TRAINING_MODE_ATHLETE && !isAthleteWorkoutDay(trainingDay)) return;
     const splitRestFaceNeckOnly =
       trainingMode === TRAINING_MODE_SPLIT && isSplitRestDay(trainingDay);
     if (trainingMode === TRAINING_MODE_SPLIT && !isSplitWorkoutDay(trainingDay) && !splitRestFaceNeckOnly) return;
@@ -1062,9 +1196,11 @@ export default function App() {
     const planLabel =
       trainingMode === TRAINING_MODE_HYBRID
         ? getPlanForDay(trainingWeek, trainingDay)
-        : splitRestFaceNeckOnly
-          ? `Split · พัก · บริหารหน้า-คอ`
-          : `Split · ${getSplitDayLabel(trainingDay)}`;
+        : trainingMode === TRAINING_MODE_ATHLETE
+          ? `Athlete · ${getAthleteDayLabel(trainingDay)}`
+          : splitRestFaceNeckOnly
+            ? `Split · พัก · บริหารหน้า-คอ`
+            : `Split · ${getSplitDayLabel(trainingDay)}`;
     setSessionRecords((prev) =>
       prev.concat({
         sessionDate: currentSessionDate,
@@ -1347,12 +1483,24 @@ export default function App() {
             {/* หัวข้อ + เลือกโหมด: Hybrid 12 สัปดาห์ / เฉพาะจุด 4 วัน */}
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10">
               <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                <Dumbbell className="w-5 h-5 text-cyan-400" />
-                {trainingMode === TRAINING_MODE_HYBRID
-                  ? 'แผนสร้างกล้ามเนื้อ 12 สัปดาห์ (3 เดือน)'
-                  : 'แผนเฉพาะจุด · 7 วัน · จ–อา'}
+                <Dumbbell className={`w-5 h-5 ${userIsAthlete ? 'text-orange-400' : 'text-cyan-400'}`} />
+                {userIsAthlete
+                  ? 'แผนสร้างกล้าม · 4 วัน/สัปดาห์'
+                  : trainingMode === TRAINING_MODE_HYBRID
+                    ? 'แผนสร้างกล้ามเนื้อ 12 สัปดาห์ (3 เดือน)'
+                    : 'แผนเฉพาะจุด · 7 วัน · จ–อา'}
               </h2>
-              <p className="text-cyan-400/90 text-xs font-medium mt-1">บัญชี: {user?.name ?? '—'}</p>
+              <p className={`text-xs font-medium mt-1 ${userIsAthlete ? 'text-orange-400/90' : 'text-cyan-400/90'}`}>
+                บัญชี: {user?.name ?? '—'}
+              </p>
+              {userIsAthlete && user?.profile && (
+                <p className="text-slate-400 text-sm mt-2 leading-relaxed">
+                  {user.profile.age} ป. · {user.profile.heightCm} ซม. · {user.profile.weightKg} กก. ·{' '}
+                  {user.profile.sport} · เน้น อก·หลัง·ไหล่·ขา
+                </p>
+              )}
+              {!userIsAthlete && (
+              <>
               <div className="flex gap-2 mt-3">
                 <button
                   type="button"
@@ -1390,9 +1538,63 @@ export default function App() {
                   ? 'แผนเดิม Program A/B · แตะแต่ละท่าเพื่อบันทึก'
                   : 'ท่าละ ~4–5 · กล้ามหลัก ~2 ครั้ง/สัปดาห์ · เน้นไหล่กว้าง'}
               </p>
+              </>
+              )}
+              {userIsAthlete && (
+                <p className="text-slate-400 text-sm mt-3">
+                  จ–อ–พฤ–ศ = ยิม · เส–อา = พัก/บาส · ~5 ท่า/วัน · ติ๊กครบแล้วบันทึก
+                </p>
+              )}
             </div>
 
-            {/* ช่วงสัปดาห์: แสดงทีละ 3 สัปดาห์ */}
+            {userIsAthlete && (
+              <>
+                <div className="rounded-2xl border border-orange-400/25 bg-orange-500/10 backdrop-blur-xl p-4 space-y-3">
+                  <p className="text-sm font-semibold text-orange-200">ตาราง 4 วัน · จ–อ–พฤ–ศ</p>
+                  <div className="rounded-lg border border-orange-400/20 overflow-hidden text-xs">
+                    {ATHLETE_WEEKDAY_NAMES.map((weekday, i) => {
+                      const d = i + 1;
+                      const isActive = trainingDay === d;
+                      return (
+                        <button
+                          key={weekday}
+                          type="button"
+                          onClick={() => setTrainingDay(d)}
+                          className={`w-full flex justify-between gap-2 px-2.5 py-2 border-b border-orange-400/10 last:border-0 text-left transition-colors ${
+                            isActive ? 'ring-1 ring-inset ring-orange-400/50 bg-orange-500/15 text-orange-100' : 'hover:bg-white/5 text-slate-300'
+                          }`}
+                        >
+                          <span className="font-medium">{weekday}</span>
+                          <span>
+                            วัน {d} · {getAthleteDayLabel(d)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-slate-500 text-[11px]">เสาร์–อาทิตย์: พักหรือฝึกบาส · ไม่บังคับยิม</p>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[1, 2, 3, 4].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setTrainingDay(d)}
+                      className={`py-2.5 rounded-xl text-sm font-medium transition-all border ${
+                        trainingDay === d
+                          ? 'bg-orange-500/25 text-orange-300 border-orange-400/45'
+                          : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      วัน {d}
+                      <span className="block text-[11px] opacity-90 mt-0.5">{getAthleteDayLabel(d)}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {!userIsAthlete && (
             <div className="space-y-2">
               <p className="text-slate-400 text-xs uppercase tracking-wider px-1">ช่วงสัปดาห์ (แสดงทีละ 3 สัปดาห์)</p>
               <div className="flex gap-2 flex-wrap">
@@ -1455,9 +1657,10 @@ export default function App() {
                 </button>
               )}
             </div>
+            )}
 
             {/* ปฏิทินแนะนำ — เฉพาะโหมดเฉพาะจุด */}
-            {trainingMode === TRAINING_MODE_SPLIT && (
+            {!userIsAthlete && trainingMode === TRAINING_MODE_SPLIT && (
               <div className="rounded-2xl border border-violet-400/25 bg-violet-500/10 backdrop-blur-xl p-4 space-y-3">
                 <div className="flex items-start gap-2">
                   <Info className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
@@ -1503,7 +1706,7 @@ export default function App() {
             )}
 
             {/* เลือกวัน: Hybrid = 1–3 + พัก · Split = 1–7 (วัน 3 = พัก) */}
-            {trainingMode === TRAINING_MODE_HYBRID ? (
+            {!userIsAthlete && (trainingMode === TRAINING_MODE_HYBRID ? (
               <div className="flex gap-2">
                 {[1, 2, 3].map((d) => (
                   <button
@@ -1558,16 +1761,16 @@ export default function App() {
                   );
                 })}
               </div>
-            )}
+            ))}
 
             {/* วันพักผ่อน — Hybrid วัน 4 · เฉพาะจุด วัน 3 (พุธ) */}
-            {trainingMode === TRAINING_MODE_HYBRID && trainingDay === 4 && (
+            {!userIsAthlete && trainingMode === TRAINING_MODE_HYBRID && trainingDay === 4 && (
               <RestDayGuide
                 subtitle={`วันต่อไป: กลับไปวัน 1 (Program ${getPlanForDay(trainingWeek, 1) ?? 'A'})`}
                 accent="emerald"
               />
             )}
-            {trainingMode === TRAINING_MODE_SPLIT && trainingDay === SPLIT_REST_DAY && (
+            {!userIsAthlete && trainingMode === TRAINING_MODE_SPLIT && trainingDay === SPLIT_REST_DAY && (
               <RestDayGuide
                 subtitle="พุธ = พักเต็ม · วันถัดไป: วัน 4 หลัง · ทำบริหารหน้า–คอด้านล่างได้"
                 accent="violet"
@@ -1660,6 +1863,9 @@ export default function App() {
                     {trainingMode === TRAINING_MODE_SPLIT && (
                       <span className="text-violet-400/90"> ({getSplitDayLabel(trainingDay)})</span>
                     )}
+                    {trainingMode === TRAINING_MODE_ATHLETE && (
+                      <span className="text-orange-400/90"> ({getAthleteDayLabel(trainingDay)})</span>
+                    )}
                     :
                   </label>
                   <input
@@ -1736,11 +1942,17 @@ export default function App() {
 
                 {currentProgram.map((ex, index) => {
               const stepNum = index + 1;
-              const stepVariant = trainingMode === TRAINING_MODE_SPLIT ? 'split' : 'default';
+              const stepVariant =
+                trainingMode === TRAINING_MODE_ATHLETE
+                  ? 'orange'
+                  : trainingMode === TRAINING_MODE_SPLIT
+                    ? 'split'
+                    : 'default';
               const name = trainingPlace === 'gym' ? ex.nameGym : ex.nameHome;
               const done = completedIdsCurrent[ex.id];
               const repDisplay = ex.unit ? `${ex.reps} ${ex.unit}` : ex.reps;
-              const isWarmup = ex.reps === '-' || ex.id === 'a0' || ex.id === 'b0';
+              const isWarmup =
+                ex.reps === '-' || ex.id === 'a0' || ex.id === 'b0' || /^ath_[a-z]+_0$/.test(ex.id);
               const inputUnit = ex.inputUnit || 'kg';
               const currentWeight = currentSessionWeights[ex.id];
               const lastWeight = getLastWeightForExercise(ex.id);
@@ -2048,6 +2260,9 @@ export default function App() {
                 {trainingMode === TRAINING_MODE_HYBRID && trainingDay >= 1 && trainingDay <= 3 && (
                   <PostWorkoutGuide guide={HYBRID_POST_WORKOUT} accent="emerald" />
                 )}
+                {trainingMode === TRAINING_MODE_ATHLETE && isAthleteWorkoutDay(trainingDay) && (
+                  <PostWorkoutGuide guide={ATHLETE_POST_WORKOUT} accent="orange" />
+                )}
 
                 {/* เมื่อทำครบทั้งวัน: ปุ่มบันทึก น้ำหนัก + วันเวลา */}
                 {trainingAllDone && (
@@ -2067,9 +2282,11 @@ export default function App() {
                     </button>
                     <p className="text-slate-500 text-[10px] text-center">
                       เก็บไว้เป็นข้อมูลอ้างอิง (สัปดาห์ที่ {trainingWeek} · วันที่ {trainingDay} ·{' '}
-                      {trainingMode === TRAINING_MODE_HYBRID
-                        ? `Plan ${getPlanForDay(trainingWeek, trainingDay)}`
-                        : `เฉพาะจุด · ${getSplitDayLabel(trainingDay)}`}
+                      {trainingMode === TRAINING_MODE_ATHLETE
+                        ? `นักบาส · ${getAthleteDayLabel(trainingDay)}`
+                        : trainingMode === TRAINING_MODE_HYBRID
+                          ? `Plan ${getPlanForDay(trainingWeek, trainingDay)}`
+                          : `เฉพาะจุด · ${getSplitDayLabel(trainingDay)}`}
                     </p>
                   </div>
                 )}
